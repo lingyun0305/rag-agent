@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <title>大模型对话窗口</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui;
+        }
+
+        body {
+            background: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .chat-box {
+            width: 500px;
+            height: 85vh;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 0 10px #0002;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .messages {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .msg {
+            max-width: 75%;
+            padding: 8px 12px;
+            border-radius: 8px;
+        }
+
+        .user {
+            align-self: flex-end;
+            background: #0096ff;
+            color: white;
+        }
+
+        .ai {
+            align-self: flex-start;
+            background: #e5e5ea;
+            color: #111;
+        }
+
+        .input-area {
+            display: flex;
+            padding: 10px;
+            gap: 8px;
+            border-top: 1px solid #ddd;
+        }
+
+        input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            outline: none;
+        }
+
+        button {
+            padding: 10px 16px;
+            border: none;
+            background: #0096ff;
+            color: white;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="chat-box">
+        <div class="messages" id="messages"></div>
+        <div class="input-area">
+            <input type="text" id="input" placeholder="输入消息...">
+            <button id="sendBtn">发送</button>
+        </div>
+    </div>
+
+    <script>
+        const SendBtn = document.getElementById("sendBtn")
+        const Input = document.getElementById("input")
+
+        SendBtn.addEventListener('click', sendMessage)
+        Input.addEventListener("keydown",function(e){
+            if(e.key === "Enter"){
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        async function sendMessage() {
+            const text = Input.value.trim()
+            if(!text){
+                return;
+            }
+
+            addMesg(text,"user");
+            Input.value = "";
+
+            const aiDom = addMesg("","ai")
+
+            const res = await fetch("/api/chat",{
+                method:"POST",
+                headers:{"Content-Type":"application/json"},
+                body:JSON.stringify({
+                    mesg:text
+                    
+                })
+            });
+
+            const reader=res.body.getReader()
+            const decoder = new TextDecoder("utf-8")
+
+            let fullreply=""
+            while(true){
+                const {done,value} = await reader.read()
+                if(done){
+                    break
+                }
+                const textPiece = decoder.decode(value)
+                fullreply += textPiece
+                aiDom.textContent = fullreply
+                aiDom.scrollIntoView()
+            }
+            // const obj = await res.json();
+            // if(obj.status_code !== 200){
+            //     alert("error:"+obj.error)
+            //     return;
+            // }
+            // const answer = obj.output;
+            // addMesg(answer,"ai");
+        }
+        function addMesg(text,role){
+            const div = document.createElement("div");
+            div.className = "msg " +role;
+            div.textContent = text;
+            document.getElementById("messages").appendChild(div);
+            // div.scrollIntoView();
+            return div;
+        }
+    </script>
+</body>
+
+</html>

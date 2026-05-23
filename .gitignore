@@ -1,0 +1,27 @@
+# Python 缓存文件
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+
+# 环境变量文件
+.env
+.env.local
+.env.*
+backend/.env
+
+# 虚拟环境
+venv/
+.venv/
+env/
+ENV/
+
+# 日志文件
+logs/
+*.log
+
+# VSCode 配置
+.vscode/
