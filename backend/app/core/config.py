@@ -9,13 +9,35 @@ class Settings(BaseSettings):
     VECTOR_STORE_URI:Optional[str]=None
     VECTOR_STORE_PORT:Optional[int]=None
 
-    # Embedding模型配置
-    EMBEDDING_MODEL:str = "BAAI/bfe-m3"
-    EMBEDDING_API_KEY:Optional[str]=None
-    EMBEDDING_DEVICE:str="cpu"
+     # 加载数据库配置
+    MYSQL_USER:str
+    MYSQL_PASSWORD:str
+    MYSQL_HOST:str = "localhost"     
+    MYSQL_PORT:int = 3306
+    MYSQL_DATABASE:str
+
+    # 加载Embedding模型配置
+    # openaiEmbedding模型
+    OPENAI_EMBEDDING_MODEL:str = "text-embedding-3-small"
+    OPENAI_EMBEDDING_API_KEY:str
+    # bge模型
+    HUGGINGFACEEMBEDDINGS_MODEL_NAME:str = "BAAI/bge-large-zh-v1.5"
+    HUGGINGFACEEMBEDDINGS_DEVICE:str="cpu"
 
     # 重排序模型
-    RERANK_MODEL_NAME:str = "BAAI/bge-m3"
+    # bge模型
+    RERANK_MODEL_NAME:str = "BAAI/bge-reranker-v2-m3"
+    RERANK_MODEL_DEVICE:str="cpu"
+
+    # 加载LLM配置
+    # 千问
+    DASHSCOPE_API_KEY:str
+    DASHSCOPE_BASE_URL:str
+    DASHSCOPE_MODEL:str = "qwen-turbo"
+    #豆包
+    ARK_API_KEY:str
+    ARK_BASE_URL:str
+    ARK_MODEL:str = "doubao-pro-32k"
 
     # 通用检索配置
     ENABLE_HYDE:bool = True
@@ -27,17 +49,6 @@ class Settings(BaseSettings):
     RETRIEVE_TOP_K:int = 20
     KNOWLEDGE_FILE_PATH:str = "./knowledge_base"
 
-    # 加载LLM配置
-    LLM_API_KEY:str
-    LLM_BASE_URL:str
-    LLM_MODEL:str = "qwen-turbo"
-
-    # 加载数据库配置
-    MYSQL_USER:str
-    MYSQL_PASSWORD:str
-    MYSQL_HOST:str = "localhost"     
-    MYSQL_PORT:int = 3306
-    MYSQL_DATABASE:str
 
     # 加载JWT 配置
     SECRET_KEY:str
