@@ -1,10 +1,11 @@
+# backend/app/core/config.py
 from pydantic_settings import BaseSettings
 from typing import Optional
 
 class Settings(BaseSettings):
     # 向量数据库基础配置
     VECTOR_STORE_TYPE:str = "chroma" 
-    CHROMA_PERSIST_DIR:str = "./chroma_db" # 数据持久化目录
+    VECTOR_STORE_PATH:str = "./chroma_db" # 数据持久化目录
     CHROMA_COLLECTION_NAME:Optional[str]=None #集合名称
     VECTOR_STORE_URI:Optional[str]=None
     VECTOR_STORE_PORT:Optional[int]=None
