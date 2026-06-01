@@ -18,7 +18,7 @@ class VectorStoreUtil:
     # ====== 初始化 ======
     def __init__(
         self,
-        collection_name:str,
+        collection_name:str = "default_collection",
         persist_directory:Optional[str] = None,
         embedding_provider:str = "bge"
     ):
