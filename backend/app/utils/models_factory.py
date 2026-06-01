@@ -2,6 +2,7 @@
 from typing import Dict
 from langchain_openai import ChatOpenAI,OpenAIEmbeddings
 from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_classic.retrievers.document_compressors import CrossEncoderReranker
 
 from backend.app.core.config import settings
 from backend.app.common.exceptions import BusinessException
@@ -109,7 +110,7 @@ class modelFactory:
         return self._embedding_instances[provider]
     
 
-    def get_rerank_model(self,provider:str = "bge")->any:
+    def get_rerank_model(self,provider:str = "bge")->CrossEncoderReranker:
         """
         获取Rerank模型实例
         Rerank的作用：对检索结果进行精排，提高相关性
