@@ -1,3 +1,4 @@
+# backend/app/utils/text_splitter.py
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import TextLoader,PyPDFLoader,Docx2txtLoader,CSVLoader
 import os

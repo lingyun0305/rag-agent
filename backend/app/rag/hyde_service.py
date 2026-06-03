@@ -8,6 +8,7 @@ from backend.app.utils.vector_store import get_vector_store
 class HyDEService:
     """
     HyDE（Hypothetical Document Embeddings）检索服务
+    
     原理：先用LLM根据用户问题生成一篇假设性文档，
     再用这篇假设文档去做向量检索，提升检索准确率。
     """

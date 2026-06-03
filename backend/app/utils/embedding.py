@@ -1,3 +1,4 @@
+# backend/app/utils/embedding.py
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from typing import Optional,List
 from backend.app.core.config import settings

@@ -1,3 +1,4 @@
+# backend/app/schemas/knowledge.py
 from pydantic import BaseModel,Field
 
 # 文件上传请求模型

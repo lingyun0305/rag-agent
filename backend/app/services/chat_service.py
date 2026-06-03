@@ -1,3 +1,4 @@
+# backend/app/services/chat_service.py
 import dashscope
 from dashscope import Generation
 import json

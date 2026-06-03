@@ -1,3 +1,4 @@
+# backend/app/schemas/chat.py
 from pydantic import BaseModel
 
 class chatMessage(BaseModel):

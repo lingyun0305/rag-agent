@@ -1,3 +1,4 @@
+# backend/app/models/chat_history.py
 from sqlalchemy import Column,Integer,String,Text,DATETIME,func
 from backend.db.db_config import Base
 

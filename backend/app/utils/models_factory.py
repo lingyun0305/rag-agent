@@ -64,7 +64,6 @@ class modelFactory:
         Args:
             provider: 模型提供商 "qwen" 或 "doubao"
             temperature: 创造性程度,0-1之间
-        
         Returns:
             ChatOpenAI 实例(兼容OpenAI格式)
         """
@@ -89,7 +88,6 @@ class modelFactory:
         Embedding的作用：将文本转成向量，用于语义检索
         Args:
             provider: "openai"(付费API) 或 "bge"(本地免费)
-        
         Returns:
             Embedding模型实例
         """
@@ -116,7 +114,6 @@ class modelFactory:
         Rerank的作用：对检索结果进行精排，提高相关性
         Args:
             provider: 目前只支持 "bge"
-        
         Returns:
             Rerank模型实例
         """

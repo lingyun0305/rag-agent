@@ -1,6 +1,4 @@
 # backend/app/utils/rerank_service.py
-from langchain_community.cross_encoders import HuggingFaceCrossEncoder
-from langchain_classic.retrievers.document_compressors import CrossEncoderReranker
 from langchain_core.documents import Document
 from typing import List,Optional
 

@@ -1,3 +1,4 @@
+# backend/app/common/middleware.py
 # 中间件
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi import Request

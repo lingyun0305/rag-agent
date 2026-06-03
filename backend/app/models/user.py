@@ -1,4 +1,5 @@
-from sqlalchemy import Column,Integer,String,Text,DATETIME,func
+# backend/app/models/user.py
+from sqlalchemy import Column,Integer,String,DATETIME,func
 from backend.db.db_config import Base
 
 #用户表

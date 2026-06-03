@@ -1,3 +1,4 @@
+# backend/app/models/knowledge.py
 from sqlalchemy import Column,Integer,String,Text,DATETIME,func,ForeignKey
 
 from backend.db.db_config import Base

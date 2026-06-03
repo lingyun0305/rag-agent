@@ -1,3 +1,4 @@
+# backend/app/common/response.py
 # 统一返回/响应格式
 from fastapi.responses import JSONResponse
 from typing import Any

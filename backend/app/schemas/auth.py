@@ -1,3 +1,4 @@
+# backend/app/schemas/auth.py
 from pydantic import BaseModel
 
 #接收前端登录请求的参数

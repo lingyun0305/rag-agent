@@ -1,3 +1,4 @@
+# backend/app/core/rag_config.py
 from pydantic import BaseModel
 
 class RAGTextSplitConfig(BaseModel):
