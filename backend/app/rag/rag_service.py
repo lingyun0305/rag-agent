@@ -18,9 +18,10 @@ class RAGService:
         self.llm = modelFactory.get_llm_model(provider=llm_provider,temperature=temperture)
         self.retriever = retriever_service
     
-    def query(
+    def chat(
         self,
         query:str,
+        collection_name:str = "default_collection",
         history:Optional[List[Dict]]=None,
         strategy:str = "hybrid",
         use_rerank:bool = True,
@@ -30,6 +31,7 @@ class RAGService:
         RAG问答主入口
         Args:
             query: 用户问题
+            collect_name:知识库集合名字
             history: 对话历史 [{"role": "user/assistant", "content": "..."}]
             strategy: 检索策略 vector/bm25/hybrid/hyde
             use_rerank: 是否启用Rerank
@@ -39,6 +41,7 @@ class RAGService:
         # 检索相关文档
         docs = self.retriever.retrieve(
             query=query,
+            collect_name=collection_name,
             strategy=strategy,
             use_rerank=use_rerank,
             filter_dict=filter_dict
@@ -52,7 +55,8 @@ class RAGService:
         return {
             "answer":response,
             "sources":sources,
-            "strategy":strategy
+            "strategy":strategy,
+            "collection_name":collection_name,
         }
 
     # ====== Prompt 构建 ======
@@ -170,6 +174,7 @@ class RAGService:
     async def chat_stream(
         self,
         query:str,
+        collection_name: str = "default_collection",
         history:Optional[List[Dict]]=None,
         strategy:str = "hybrid",
         use_rerank:bool = True,
@@ -184,7 +189,12 @@ class RAGService:
             字符串chunk
         """
         # 检索
-        docs = self.retriever.retrieve(query=query,strategy=strategy,use_rerank=use_rerank)
+        docs = self.retriever.retrieve(
+            query=query,
+            collect_name=collection_name,
+            strategy=strategy,
+            use_rerank=use_rerank
+        ) 
         prompt = self.build_prompt(query=query,docs=docs,history=history)
         # 流式生成 
         async for chunk in self.llm.astream(prompt):

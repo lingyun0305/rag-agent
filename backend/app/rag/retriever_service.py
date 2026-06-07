@@ -5,7 +5,7 @@ from langchain_core.documents import Document
 from backend.app.rag.bm25_service import bm25_service
 from backend.app.rag.hyde_service import hyde_service
 from backend.app.rag.rerank_service import rerank_service
-from backend.app.utils.vector_store import vector_store_util
+from backend.app.utils.vector_store import vector_store_util,get_vector_store
 
 class RetrieverService:
     """
@@ -36,14 +36,16 @@ class RetrieverService:
         self,
         query:str,
         strategy:str = "hybrid",
+        collection_name:str = "default_collection",
         use_rerank:Optional[bool] = None,
-        filter_dict:Optional[Dict] = None
+        filter_dict:Optional[Dict] = None,
     )->List[Document]:
         """
         检索主入口
         Args:
             query: 用户查询
             strategy: 检索策略 ("vector" | "bm25" | "hybrid" | "hyde")
+            collect_name:知识库集合名字
             use_rerank: 是否启用Rerank
             filter_dict: 元数据过滤条件
         Returns:
@@ -52,13 +54,13 @@ class RetrieverService:
         should_rerank = use_rerank if use_rerank is not None else self.use_rerank
 
         if strategy == "vector":
-            candidates = self.retrieve_vector(query=query,filter_dict=filter_dict)
+            candidates = self.retrieve_vector(query=query,collection_name = collection_name,filter_dict=filter_dict)
         elif strategy == "bm25":
             candidates = self.retrieve_bm25(query=query)
         elif strategy == "hyde":
-            candidates = self.retrieve_hyde(query=query,filter_dict=filter_dict)
+            candidates = self.retrieve_hyde(query=query,collection_name = collection_name,filter_dict=filter_dict)
         else:
-            candidates = self.hybrid_retrieve(query=query,filter_dict=filter_dict)
+            candidates = self.hybrid_retrieve(query=query,collection_name = collection_name,filter_dict=filter_dict)
 
         if should_rerank and len(candidates)>0:
             self.rerank_results(query=query,documents=candidates)
@@ -70,17 +72,20 @@ class RetrieverService:
     def retrieve_vector(
         self,
         query:str,
+        collection_name:str,
         filter_dict:Optional[Dict] = None
     )->List[Document]:
         """
         纯向量检索
         Args:
             query: 用户查询
+            collect_name:知识库集合名字
             filter_dict: 过滤条件
         Returns:
             相关文档列表
         """ 
-        return self.vector_store.search(
+        vector_store = get_vector_store(collection_name=collection_name)
+        return vector_store.search(
             query=query,
             top_k=self.vector_top_k,
             filter_dict=filter_dict
@@ -102,12 +107,14 @@ class RetrieverService:
     def retrieve_hyde(
         self,
         query:str,
+        collection_name:str,
         filter_dict:Optional[Dict] = None
     )->List[Document]:
         """
         HyDE增强检索
         Args:
             query: 用户查询
+            collect_name:知识库集合名字
             filter_dict: 过滤条件
         Returns:
             相关文档列表
@@ -115,23 +122,26 @@ class RetrieverService:
         return self.hyde.retrieve_with_hyde(
             query=query,
             top_k=self.vector_top_k,
-            filter_dict=filter_dict
+            filter_dict=filter_dict,
+            collection_name=collection_name
         )
     
     def hybrid_retrieve(
         self,
         query:str,
+        collection_name:str,
         filter_dict:Optional[Dict] = None
     )->List[Document]:
         """
         混合检索：向量+bm25，合并去重
         Args:
             query: 用户查询
+            collect_name:知识库集合名字
             filter_dict: 过滤条件
         Returns:
             相关文档列表
         """
-        vector_docs = self.retrieve_vector(query,filter_dict)
+        vector_docs = self.retrieve_vector(query,collection_name,filter_dict)
         bm25_docs = self.retrieve_bm25(query)
         return self.mergeResults(vector_docs,bm25_docs)
     

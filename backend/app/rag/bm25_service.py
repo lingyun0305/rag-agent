@@ -1,5 +1,5 @@
 # backend/app/utils/bm25_service.py
-from typing import Optional,List,Dict
+from typing import Optional,List,Dict,Any
 from langchain_core.documents import Document
 from langchain_community.retrievers import BM25Retriever
 import jieba
@@ -83,6 +83,23 @@ class BM25Service:
         ]
         self._build_index()
     
+    def delete_by_filter(self,filter_dict: Dict[str,Any])->None:
+        """
+        根据元数据条件删除文档（删除后重建索引）
+        Args:
+            filter_dict: 过滤条件，如 {"source": "file.pdf"}
+        """
+        if not filter_dict or not self._documents:
+            return
+        def match(doc: Document)->bool:
+            """判断文档是否匹配过滤条件"""
+            for key,value in filter_dict.items():
+                if doc.metadata.get(key) != value:
+                    return True # 不匹配，保留
+            return False
+        self._documents = [doc for doc in self._documents if match(doc)]
+        self._build_index()
+
     def clear(self)->None:
         """清空所有文档和索引"""
         self._documents = []

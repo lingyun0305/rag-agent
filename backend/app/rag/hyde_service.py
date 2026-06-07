@@ -64,7 +64,8 @@ class HyDEService:
         self,
         query:str,
         top_k:int = 6,
-        filter_dict:Optional[Dict[str,any]] = None
+        filter_dict:Optional[Dict[str,any]] = None,
+        collection_name: Optional[str] = None,
     )->List[Document]:
         """
         使用HyDE方式检索相关文档
@@ -73,11 +74,13 @@ class HyDEService:
             query: 用户原始问题
             top_k: 返回文档数量
             filter_dict: 元数据过滤条件
+            collection_name: 知识库名称
         Returns:
             相关文档列表
         """    
         hypothetical_doc = self.generate_hypothetical_doc(query)
-        results = self.vector_store.search(
+        vector_store = get_vector_store(collection_name=collection_name)
+        results = vector_store.search(
             query=hypothetical_doc,
             top_k=top_k,
             filter_dict=filter_dict
@@ -89,7 +92,8 @@ class HyDEService:
         query:str,
         top_k:int = 6,
         score_threshold:float=0.7,
-        filter_dict:Optional[Dict[str,any]] = None
+        filter_dict:Optional[Dict[str,any]] = None,
+        collection_name: Optional[str] = None
     )->List[tuple[Document,float]]:
         """
         HyDE检索（带相似度分数）
@@ -98,10 +102,12 @@ class HyDEService:
             top_k: 返回文档数量
             score_threshold: 相似度阈值
             filter_dict: 元数据过滤条件
+            collection_name: 知识库名称
         Returns:
             (文档, 分数) 元组列表
         """
         hypothetical_doc = self.generate_hypothetical_doc(query)
+        vector_store = get_vector_store(collection_name=collection_name)
         results = self.vector_store.search_with_score(
             query=hypothetical_doc,
             top_k=top_k,

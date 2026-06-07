@@ -1,116 +1,94 @@
 # backend/app/services/chat_service.py
-import dashscope
-from dashscope import Generation
-import json
+from typing import Dict,List,Any,Optional
+from sqlalchemy.orm import Session
 
-from backend.app.rag.config import get_rag_context
-from backend.app.models.chat_history import ChatHistory
-from backend.app.core.config import LLM_API_KEY,LLM_MODEL
-from backend.app.utils.common import loadPrompt
+from backend.app.rag.rag_service import rag_service
+from backend.app.services.chat_history_service import chat_history_service
 
-#配置api key
-dashscope.api_key = LLM_API_KEY
 
-#加载prompt
-rewrite_prompt = loadPrompt("rewrite_prompt.txt")
-rag_prompt = loadPrompt("rag_prompt.txt")
-struct_prompt = loadPrompt("struct_prompt.txt")
-
-#聊天服务
-async def chatService(msg,db):
-    user_query = msg.mesg
-    user_ID = msg.user_id
-    session_ID = msg.session_id
-    #保存用户信息
-    user_msg =  ChatHistory(
-        user_id = user_ID,
-        session_id = session_ID,
-        role="user",
-        content = user_query
-    )
-    db.add(user_msg)
-    await db.commit()
-    
-    #获取历史记录
-    history = await db.query(ChatHistory)\
-        .filter(ChatHistory.user_id == user_ID)\
-        .filter(ChatHistory.session_id == session_ID)\
-        .order_by(ChatHistory.create_time.desc())\
-        .limit(20)\
-        .all()
-    
-    chat_history = [{"role":"user","content":h.content} for h in history]
-
-    #问题改写
-    rewrite_message = [
-        {"role":"system","content":rewrite_prompt},
-        *chat_history
-    ]
-    
-    resp = Generation.call(
-        model=LLM_MODEL,
-        messages=rewrite_message,
-        stream=False,
-        result_format="message"
-    )
-    if resp.status_code!=200:
-        yield "【问题改写失败】"
-        return
-    
-    final_query = resp.output.choices[0].message.content
-
-    #rag检索
-    context = get_rag_context(final_query)
-
-    #prompt拼接
-    final_prompt = f"""
-        {rag_prompt}
-        {struct_prompt}
-
-        【参考知识】
-        {context}
-
-        【用户问题】
-        {final_query}
+class ChatService:
     """
+    对话业务编排服务
+    """
+    def __init__(self,history_rounds: int = 5):
+        self.history_rounds = history_rounds
+    
+    def chat(
+        self,
+        query: str,
+        user_id: int,
+        session_id: str,
+        collection_name: str = "default_collection",
+        strategy: str = "hybrid",
+        use_rerank: bool = True,   
+        db:Optional[Session] = None,
+    )->Dict[str,Any]:
+        """
+        完整对话流程（非流式）
+        """
+        # 查找历史
+        history = chat_history_service.get_last_n_exchanges(
+            session_id,
+            n=self.history_rounds,
+            db=db,
+        )
+        # 调用RAG
+        result = rag_service.chat(
+            query=query,
+            collection_name= collection_name,
+            history=history,
+            strategy=strategy,
+            use_rerank=use_rerank,
+        )
+        # 保存对话
+        chat_history_service.save_exchange(
+            user_id=user_id,
+            session_id=session_id,
+            user_message=query,
+            assistant_message=result["answer"],
+            db=db,
+        )
+        return result
+    
+    async def chat_stream(
+        self,
+        query: str,
+        user_id: int,
+        session_id: str,
+        collection_name: str = "default_collection",
+        strategy: str = "hybrid",
+        use_rerank: bool = True,
+        db: Optional[Session] =None
+    ):
+        """
+        完成对话流程（流式）
+        """
+        # 查询历史
+        history = chat_history_service.get_last_n_exchanges(
+            session_id=session_id,
+            n=self.history_rounds,
+            db=db,
+        )
+        # 流式生成+拼接完整答案
+        full_answer = ""
+        async for chunk in rag_service.chat_stream(
+            query=query,
+            collection_name=collection_name,
+            history=history,
+            strategy=strategy,
+            use_rerank=use_rerank,
+        ):
+            full_answer += chunk
+            yield chunk
+        # 保存对话
+        chat_history_service.save_exchange(
+            user_id=user_id,
+            session_id=session_id,
+            user_message=query,
+            assistant_message=full_answer,
+            db=db,
+        )
 
-    messages = [
-        {"role": "system", "content": "你是严谨的AI助手，只根据参考资料回答"},
-        {"role": "user", "content": final_prompt}
-    ]
-    #流式返回
-    full_reply = ""
-    last_sent = ""
+# ====== 全局实例 ======
 
-    stream_resp = Generation.call(
-        model="qwen-turbo",
-        messages=messages,
-        stream=True,
-        result_format="message",
-    )
-
-    for chunck in stream_resp:
-        if chunck.status_code!=200:
-            yield "【流式错误】"
-            continue
-        piece = chunck.output.choices[0].message.content
-        full_reply = piece
-            
-        if len(piece) > len(last_sent):
-            new_text = piece[len(last_sent):]
-            last_sent = piece
-            yield new_text
-    try:
-        result_json = json.loads(full_reply.strip())
-        answer = result_json["answer"]
-    except:
-        answer = full_reply
-
-    ai_msg = ChatHistory(
-        user_id = user_ID,
-        session_id = session_ID,
-        role = "assistant",
-        content = answer
-    )
-    db.add(ai_msg)
-    await db.commit()
+chat_service = ChatService()

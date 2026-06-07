@@ -1,7 +1,7 @@
 # backend/app/services/auth.py
 # 登录逻辑
 from sqlalchemy.orm import Session
-from fastapi import Depends,HTTPException,status
+from fastapi import Depends
 
 from backend.db.db_config import get_session
 from backend.app.models import user
