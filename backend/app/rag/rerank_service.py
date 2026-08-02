@@ -2,7 +2,7 @@
 from langchain_core.documents import Document
 from typing import List,Optional
 
-from backend.app.utils.models_factory import modelFactory
+from backend.app.utils.models_factory import model_factory
 
 class RerankService:
     """
@@ -20,7 +20,11 @@ class RerankService:
             provider: Rerank模型提供商，默认"bge"
             top_k: 默认返回文档数
         """
-        self.reranker = modelFactory.get_rerank_model(provider=provider)
+        self.reranker = None
+        try:
+            self.reranker = model_factory.get_rerank_model(provider=provider)
+        except Exception as e:
+            print(f"[WARN] Rerank模型加载失败，将跳过重排序: {e}")
         self.default_top_k = top_k
 
     # ====== 核心重排序方法 ======
@@ -47,6 +51,9 @@ class RerankService:
         
         if len(documents) > 100:
             documents = documents[:100]
+
+        if self.reranker is None:
+            return documents[:top_k]
 
         reranked_docs = self.reranker.compress_documents(
             documents=documents,

@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>确认上传 - 调整参数</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            background: #f5f6f7;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .app-container { display: flex; height: 100vh; width: 100%; }
+
+        /* ===== 侧边栏 ===== */
+        .sidebar {
+            width: 64px; background: #1a1d29; display: flex; flex-direction: column;
+            align-items: center; padding: 16px 0; flex-shrink: 0;
+        }
+        .sidebar-logo {
+            width: 40px; height: 40px;
+            background: linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%);
+            border-radius: 12px; display: flex; align-items: center; justify-content: center;
+            color: white; margin-bottom: 24px;
+        }
+        .sidebar-nav { flex: 1; display: flex; flex-direction: column; gap: 8px; width: 100%; align-items: center; }
+        .sidebar-item {
+            width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center;
+            justify-content: center; color: #8892a0; cursor: pointer; transition: all 0.2s; position: relative;
+        }
+        .sidebar-item:hover { background: rgba(255, 255, 255, 0.08); color: #ffffff; }
+        .sidebar-item.active { background: rgba(64, 224, 208, 0.2); color: #40E0D0; }
+        .sidebar-item svg { width: 20px; height: 20px; }
+        .sidebar-item .tooltip {
+            position: absolute; left: 56px; background: #2d3748; color: white;
+            padding: 6px 12px; border-radius: 6px; font-size: 12px; white-space: nowrap;
+            opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 100;
+        }
+        .sidebar-item:hover .tooltip { opacity: 1; }
+        .sidebar-bottom { display: flex; flex-direction: column; gap: 8px; width: 100%; align-items: center; }
+        .sidebar-avatar {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%);
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 14px; font-weight: 600; cursor: pointer;
+        }
+
+        /* ===== 主内容区 ===== */
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* 顶部栏 */
+        .top-bar {
+            padding: 16px 24px; background: #ffffff; display: flex; align-items: center; gap: 12px;
+            border-bottom: 1px solid #e8ecf1;
+        }
+        .back-btn {
+            display: flex; align-items: center; gap: 6px; padding: 8px 14px;
+            background: #f5f6f7; border: none; border-radius: 8px; color: #666;
+            font-size: 14px; cursor: pointer; transition: all 0.2s;
+        }
+        .back-btn:hover { background: #e8ecf1; color: #333; }
+
+        /* 内容区 */
+        .content-area {
+            flex: 1; padding: 24px; overflow-y: auto;
+        }
+        .content-area::-webkit-scrollbar { width: 6px; }
+        .content-area::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+
+        /* 步骤条 */
+        .steps-container {
+            background: #fff; border-radius: 12px; padding: 24px 40px;
+            border: 1px solid #e8ecf1; margin-bottom: 20px;
+        }
+        .steps {
+            display: flex; align-items: center; justify-content: space-between;
+            max-width: 700px; margin: 0 auto;
+        }
+        .step {
+            display: flex; align-items: center; gap: 10px;
+        }
+        .step-circle {
+            width: 32px; height: 32px; border-radius: 50%;
+            background: #e8ecf1; color: #9ca3af;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px; font-weight: 600;
+            transition: all 0.3s;
+        }
+        .step.active .step-circle {
+            background: linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%);
+            color: white;
+        }
+        .step.done .step-circle {
+            background: #22c55e; color: white;
+        }
+        .step-text {
+            font-size: 14px; color: #9ca3af; font-weight: 500;
+        }
+        .step.active .step-text { color: #1a1a2e; }
+        .step.done .step-text { color: #22c55e; }
+        .step-line {
+            flex: 1; height: 2px; background: #e8ecf1; margin: 0 16px;
+            min-width: 60px;
+        }
+        .step-line.done { background: #22c55e; }
+
+        /* 警告提示 */
+        .warning-banner {
+            background: #fef3c7; border: 1px solid #fbbf24;
+            border-radius: 12px; padding: 16px 20px;
+            display: flex; align-items: flex-start; gap: 12px;
+            margin-bottom: 16px;
+        }
+        .warning-icon {
+            width: 24px; height: 24px; color: #f59e0b; flex-shrink: 0;
+        }
+        .warning-content {
+            font-size: 14px; color: #92400e; line-height: 1.5;
+        }
+        .warning-title {
+            font-weight: 600; margin-bottom: 4px;
+        }
+
+        /* 表格卡片 */
+        .table-section {
+            background: #fff; border-radius: 12px; border: 1px solid #e8ecf1;
+            overflow: hidden; margin-bottom: 16px;
+        }
+        .table-header-bar {
+            padding: 16px 24px;
+            background: linear-gradient(135deg, #f0fdfa, #ecfeff);
+            border-bottom: 1px solid #e8ecf1;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .table-title {
+            font-size: 15px; font-weight: 600; color: #1a1a2e;
+            border-left: 3px solid #40E0D0; padding-left: 12px;
+        }
+        .table-count {
+            font-size: 13px; color: #64748b;
+        }
+
+        /* 文件表格 */
+        .file-table {
+            width: 100%; border-collapse: collapse;
+        }
+        .file-table thead th {
+            padding: 14px 24px;
+            background: #f8fafc;
+            font-size: 13px; font-weight: 600; color: #64748b;
+            text-align: left;
+            border-bottom: 1px solid #e8ecf1;
+        }
+        .file-table thead th:last-child { text-align: center; }
+        .file-table tbody td {
+            padding: 14px 24px;
+            font-size: 14px; color: #1a1a2e;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+        }
+        .file-table tbody tr:last-child td { border-bottom: none; }
+        .file-table tbody tr:hover { background: #f8fafc; }
+        .file-table tbody tr.uploading { background: linear-gradient(135deg, #f0fdfa, #ecfeff); }
+
+        .file-name-cell {
+            display: flex; align-items: center; gap: 10px;
+        }
+        .file-icon {
+            width: 32px; height: 32px; border-radius: 6px;
+            background: #e8ecf1; display: flex; align-items: center;
+            justify-content: center; font-size: 11px; font-weight: 600;
+            color: #64748b; flex-shrink: 0;
+        }
+        .file-name-text {
+            font-weight: 500; color: #1a1a2e;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            max-width: 300px;
+        }
+
+        /* 状态标签 */
+        .status-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 4px 12px; border-radius: 12px;
+            font-size: 12px; font-weight: 500;
+        }
+        .status-waiting {
+            background: #f1f5f9; color: #64748b;
+        }
+        .status-uploading {
+            background: #eff6ff; color: #3b82f6;
+        }
+        .status-uploading .status-dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: #3b82f6;
+            animation: pulse 1.2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        .status-success {
+            background: #dcfce7; color: #16a34a;
+        }
+        .status-failed {
+            background: #fee2e2; color: #dc2626;
+        }
+
+        /* 操作按钮 */
+        .action-btns {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .action-btn {
+            padding: 4px 10px; border: none; border-radius: 6px;
+            font-size: 12px; cursor: pointer; transition: all 0.2s;
+            background: transparent;
+        }
+        .action-btn-delete {
+            color: #ef4444;
+        }
+        .action-btn-delete:hover { background: #fee2e2; }
+        .action-btn-view {
+            color: #40E0D0;
+        }
+        .action-btn-view:hover { background: #f0fdfa; }
+        .action-btn:disabled {
+            color: #9ca3af; cursor: not-allowed;
+        }
+
+        /* 空状态 */
+        .empty-state {
+            padding: 60px 20px;
+            text-align: center; color: #9ca3af;
+        }
+        .empty-state-icon {
+            font-size: 48px; margin-bottom: 16px;
+        }
+        .empty-state-text {
+            font-size: 14px;
+        }
+
+        /* 底部操作栏 */
+        .footer-actions {
+            display: flex; justify-content: space-between; align-items: center;
+            padding-top: 8px;
+        }
+        .file-count-info {
+            font-size: 14px; color: #64748b;
+        }
+        .file-count-info strong {
+            color: #1a1a2e; font-weight: 600;
+        }
+        .footer-btns {
+            display: flex; gap: 12px;
+        }
+        .btn {
+            padding: 10px 24px; border: none; border-radius: 8px;
+            font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s;
+            display: inline-flex; align-items: center; gap: 6px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%);
+            color: white;
+        }
+        .btn-primary:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-secondary { background: #fff; color: #64748b; border: 1px solid #e8ecf1; }
+        .btn-secondary:hover { background: #f8fafc; }
+
+        /* Toast */
+        .toast {
+            position: fixed; top: 20px; right: 20px; padding: 14px 20px;
+            border-radius: 12px; color: white; font-size: 14px; z-index: 2000;
+            animation: slideIn 0.3s; display: none;
+        }
+        .toast.show { display: block; }
+        .toast.success { background: #2ed573; }
+        .toast.error { background: #ff4757; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(100%); } to { opacity: 1; transform: translateX(0); } }
+    </style>
+    <script src="/front/js/auth.js?v=20260801"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 侧边栏 -->
+        <div class="sidebar">
+            <div class="sidebar-logo">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="10" rx="2"></rect>
+                    <circle cx="12" cy="5" r="2"></circle>
+                    <path d="M12 7v4"></path>
+                </svg>
+            </div>
+            <div class="sidebar-nav">
+                <div class="sidebar-item" onclick="location.href='/front/'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    <span class="tooltip">对话</span>
+                </div>
+                <div class="sidebar-item active">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                    </svg>
+                    <span class="tooltip">知识库</span>
+                </div>
+                <div class="sidebar-item" onclick="location.href='/front/workbench.html'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>
+                    <span class="tooltip">工作台</span>
+                </div>
+                <div class="sidebar-item" onclick="location.href='/front/account.html'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <span class="tooltip">账号</span>
+                </div>
+            </div>
+            <div class="sidebar-bottom">
+                <div class="sidebar-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
+                    <span class="tooltip">帮助</span>
+                </div>
+                <div class="sidebar-avatar" onclick="location.href='/front/account.html'">U</div>
+            </div>
+        </div>
+
+        <!-- 主内容 -->
+        <div class="main-content">
+            <!-- 顶部栏 -->
+            <div class="top-bar">
+                <button class="back-btn" onclick="goBack()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                    上一步
+                </button>
+            </div>
+
+            <!-- 内容区 -->
+            <div class="content-area">
+                <!-- 步骤条 -->
+                <div class="steps-container">
+                    <div class="steps">
+                        <div class="step done" id="step1">
+                            <div class="step-circle">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </div>
+                            <div class="step-text">调整参数</div>
+                        </div>
+                        <div class="step-line done" id="line1"></div>
+                        <div class="step done" id="step2">
+                            <div class="step-circle">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </div>
+                            <div class="step-text">数据预览</div>
+                        </div>
+                        <div class="step-line done" id="line2"></div>
+                        <div class="step active" id="step3">
+                            <div class="step-circle">3</div>
+                            <div class="step-text">确认上传</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 警告提示 -->
+                <div class="warning-banner">
+                    <svg class="warning-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                        <line x1="12" y1="9" x2="12" y2="13"></line>
+                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
+                    <div class="warning-content">
+                        <div class="warning-title">注意</div>
+                        调整参数后重新处理文档，将会覆盖文档现有的分块数据。请确认以下参数无误后点击"开始上传"。
+                    </div>
+                </div>
+
+                <!-- 文件列表表格 -->
+                <div class="table-section">
+                    <div class="table-header-bar">
+                        <div class="table-title">待处理文件列表</div>
+                        <div class="table-count" id="tableCount">0 个文件</div>
+                    </div>
+                    <div id="tableWrapper">
+                        <table class="file-table" id="fileTable">
+                            <thead>
+                                <tr>
+                                    <th style="width: 40%;">来源名</th>
+                                    <th style="width: 25%;">状态</th>
+                                    <th style="width: 20%;">分块数</th>
+                                    <th style="width: 15%; text-align: center;">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="fileTableBody">
+                            </tbody>
+                        </table>
+                        <div class="empty-state" id="emptyState" style="display: none;">
+                            <div class="empty-state-icon">📄</div>
+                            <div class="empty-state-text">暂无待处理文件</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 底部操作 -->
+                <div class="footer-actions">
+                    <div class="file-count-info">
+                        共 <strong id="totalCount">0</strong> 个文件，
+                        已完成 <strong id="successCount" style="color: #16a34a;">0</strong>，
+                        失败 <strong id="failCount" style="color: #dc2626;">0</strong>
+                    </div>
+                    <div class="footer-btns">
+                        <button class="btn btn-secondary" onclick="goBack()">返回修改</button>
+                        <button class="btn btn-primary" id="startBtn" onclick="startUpload()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                            <span id="startBtnText">开始上传</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const kbId = urlParams.get('kb_id') || '';
+    const docId = urlParams.get('doc_id') || '';
+
+    let files = [];
+    let uploadConfig = {};
+
+    try {
+        const rawPreview = sessionStorage.getItem('adjust_preview_results');
+        files = JSON.parse(rawPreview || '[]');
+        console.log('[adjust_confirm] 读取 adjust_preview_results:', {
+            length: files.length,
+            firstFile: files[0] ? {
+                file_name: files[0]._orig_name || files[0].file_name,
+                total_chunks: files[0].total_chunks
+            } : null
+        });
+    } catch (e) {
+        console.error('[adjust_confirm] 解析 adjust_preview_results 失败:', e);
+        files = [];
+    }
+
+    try {
+        uploadConfig = JSON.parse(sessionStorage.getItem('adjust_config') || '{}');
+        console.log('[adjust_confirm] 读取 adjust_config:', uploadConfig);
+    } catch (e) {
+        console.error('[adjust_confirm] 解析 adjust_config 失败:', e);
+        uploadConfig = {};
+    }
+
+    if (files.length === 0) {
+        showToast('暂无待处理文件', 'error');
+    }
+
+    function goBack() {
+        location.href = `/front/adjust_preview.html?kb_id=${kbId}&doc_id=${docId}`;
+    }
+
+    function getFileExt(name) {
+        if (!name) return 'FILE';
+        const ext = name.split('.').pop().toUpperCase();
+        return ext || 'FILE';
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('fileTableBody');
+        const emptyState = document.getElementById('emptyState');
+        const table = document.getElementById('fileTable');
+        const tableCount = document.getElementById('tableCount');
+
+        if (files.length === 0) {
+            table.style.display = 'none';
+            emptyState.style.display = 'block';
+            tableCount.textContent = '0 个文件';
+            return;
+        }
+
+        table.style.display = 'table';
+        emptyState.style.display = 'none';
+        tableCount.textContent = `${files.length} 个文件`;
+
+        let html = '';
+        files.forEach((file, idx) => {
+            const fileName = file._orig_name || file.file_name || `文件${idx + 1}`;
+            const totalChunks = file.total_chunks || 0;
+            const ext = getFileExt(fileName);
+            const status = file._status || 'waiting';
+
+            let statusBadge = '';
+            switch (status) {
+                case 'uploading':
+                    statusBadge = '<span class="status-badge status-uploading"><span class="status-dot"></span>上传中</span>';
+                    break;
+                case 'success':
+                    statusBadge = '<span class="status-badge status-success">✓ 已完成</span>';
+                    break;
+                case 'failed':
+                    statusBadge = '<span class="status-badge status-failed">✗ 失败</span>';
+                    break;
+                default:
+                    statusBadge = '<span class="status-badge status-waiting">等待中</span>';
+            }
+
+            const canDelete = status === 'waiting' || status === 'failed';
+            const canView = status === 'success';
+
+            html += `
+                <tr data-index="${idx}" class="${status === 'uploading' ? 'uploading' : ''}">
+                    <td>
+                        <div class="file-name-cell">
+                            <div class="file-icon">${ext.substring(0, 4)}</div>
+                            <div class="file-name-text" title="${escapeHtml(fileName)}">${escapeHtml(fileName)}</div>
+                        </div>
+                    </td>
+                    <td>${statusBadge}</td>
+                    <td>${totalChunks} 个分块</td>
+                    <td>
+                        <div class="action-btns">
+                            <button class="action-btn action-btn-delete" onclick="removeFile(${idx})" ${canDelete ? '' : 'disabled'}>删除</button>
+                            <button class="action-btn action-btn-view" onclick="viewFile(${idx})" ${canView ? '' : 'disabled'}>查看</button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html;
+        updateFooter();
+    }
+
+    function updateFooter() {
+        const waiting = files.filter(f => !f._status || f._status === 'waiting').length;
+        const success = files.filter(f => f._status === 'success').length;
+        const failed = files.filter(f => f._status === 'failed').length;
+        const uploading = files.filter(f => f._status === 'uploading').length;
+
+        document.getElementById('totalCount').textContent = files.length;
+        document.getElementById('successCount').textContent = success;
+        document.getElementById('failCount').textContent = failed;
+
+        const startBtn = document.getElementById('startBtn');
+        const startBtnText = document.getElementById('startBtnText');
+
+        if (uploading > 0) {
+            startBtn.disabled = true;
+            startBtnText.textContent = `上传中 (${success + uploading}/${files.length})`;
+        } else if (waiting > 0) {
+            startBtn.disabled = false;
+            startBtnText.textContent = `开始上传 (${waiting})`;
+        } else if (failed > 0) {
+            startBtn.disabled = false;
+            startBtnText.textContent = `重试失败的文件 (${failed})`;
+        } else {
+            startBtn.disabled = true;
+            startBtnText.textContent = '全部完成';
+        }
+    }
+
+    function removeFile(index) {
+        if (!confirm(`确定要删除文件"${files[index]._orig_name || files[index].file_name}"吗？`)) return;
+        files.splice(index, 1);
+        renderTable();
+        showToast('已删除文件', 'success');
+    }
+
+    function viewFile(index) {
+        const file = files[index];
+        const chunks = file.preview_chunks || [];
+        const fileName = file._orig_name || file.file_name || '文件';
+        let msg = `📄 ${fileName}\n\n`;
+        chunks.slice(0, 5).forEach((c, i) => {
+            msg += `--- 分块 #${c.index} ---\n${c.content.substring(0, 100)}${c.content.length > 100 ? '...' : ''}\n\n`;
+        });
+        if (chunks.length > 5) {
+            msg += `... 还有 ${chunks.length - 5} 个分块\n`;
+        }
+        alert(msg);
+    }
+
+    async function startUpload() {
+        if (!kbId || !docId) {
+            showToast('缺少必要参数', 'error');
+            return;
+        }
+
+        if (files.length === 0) {
+            showToast('没有可处理的文件', 'error');
+            return;
+        }
+
+        const token = localStorage.getItem('access_token');
+        const startBtn = document.getElementById('startBtn');
+        startBtn.disabled = true;
+
+        const filesToUpload = files
+            .map((f, i) => ({ ...f, _origIndex: i }))
+            .filter(f => !f._status || f._status === 'waiting' || f._status === 'failed');
+
+        if (filesToUpload.length === 0) {
+            showToast('没有需要处理的文件', 'error');
+            return;
+        }
+
+        showToast(`开始处理 ${filesToUpload.length} 个文件...`, 'success');
+
+        for (const fileItem of filesToUpload) {
+            const origIdx = fileItem._origIndex;
+            files[origIdx]._status = 'uploading';
+            renderTable();
+
+            try {
+                const resp = await fetch(`/api/knowledge/kb/${kbId}/documents/${docId}/reprocess_with_config`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        chunk_size: uploadConfig.chunk_size,
+                        chunk_overlap: uploadConfig.chunk_overlap,
+                        separators: uploadConfig.separators,
+                        top_k: uploadConfig.top_k,
+                        score_threshold: uploadConfig.score_threshold,
+                        embedding_model: uploadConfig.embedding_model
+                    })
+                });
+
+                if (!resp.ok) {
+                    const err = await resp.json();
+                    throw new Error(err.msg || '处理失败');
+                }
+
+                const data = await resp.json();
+                if (!data.success) {
+                    throw new Error(data.msg || '处理失败');
+                }
+
+                files[origIdx]._status = 'success';
+            } catch (err) {
+                console.error('处理失败:', fileItem._orig_name || fileItem.file_name, err);
+                files[origIdx]._status = 'failed';
+                files[origIdx]._errorMsg = err.message;
+            }
+            renderTable();
+        }
+
+        const successCount = files.filter(f => f._status === 'success').length;
+        const failCount = files.filter(f => f._status === 'failed').length;
+
+        let msg = `成功处理 ${successCount} 个文件`;
+        if (failCount > 0) msg += `，${failCount} 个失败`;
+
+        showToast(msg, failCount > 0 ? 'error' : 'success');
+
+        if (failCount === 0) {
+            sessionStorage.removeItem('adjust_config');
+            sessionStorage.removeItem('adjust_preview_results');
+
+            setTimeout(() => {
+                location.href = `/front/kb_detail.html?kb_id=${kbId}`;
+            }, 1500);
+        } else {
+            updateFooter();
+        }
+    }
+
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str || '';
+        return div.innerHTML;
+    }
+
+    function showToast(message, type = 'success') {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.className = `toast ${type} show`;
+        setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    renderTable();
+    </script>
+</body>
+</html>

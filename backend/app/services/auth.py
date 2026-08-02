@@ -1,37 +1,77 @@
 # backend/app/services/auth.py
-# 登录逻辑
-from sqlalchemy.orm import Session
-from fastapi import Depends
+# 登录、注册逻辑
+import secrets
+import string
 
-from backend.db.db_config import get_session
-from backend.app.models import user
-from backend.app.core.security import verify_password,create_access_token
-from backend.app.common.exceptions import PasswordError,UserNotFound
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from backend.app.models import User as UserModel
+from backend.app.core.security import verify_password, create_access_token, get_password_hash
+from backend.app.common.exceptions import PasswordError, UserNotFound, BusinessException
+from backend.app.schemas.auth import TokenResp, RegisterResp
+
+
+def generate_id() -> str:
+    """生成12位随机ID"""
+    alphabet = string.ascii_letters + string.digits
+    return ''.join(secrets.choice(alphabet) for _ in range(12))
+
 
 async def login_service(
-    username:str,
-    password:str,
-    db:Session = Depends(get_session)
-):
+    username: str,
+    password: str,
+    db: AsyncSession
+) -> TokenResp:
+    """用户登录服务"""
     # 查询用户
-    User = db.query(user).filter(user.username == username).first()
-    if not User:
+    result = await db.execute(select(UserModel).where(UserModel.username == username))
+    user_obj = result.scalar_one_or_none()
+    if not user_obj:
         raise UserNotFound()
-        
+
     # 校验密码
-    if not verify_password(password,User.hashed_password):
+    if not verify_password(password, user_obj.hashed_password):
         raise PasswordError()
+
     # 生成token
     token = create_access_token(
         data={
-            "sub":str(User.uid),
-            "username":username
+            "sub": str(user_obj.id),
+            "username": username
         }
     )
-    # 返回给前端
-    return {
-        "access_token":token,
-        "token_type":"Bearer",
-        "uid":User.id,
-        "username":User.username
-    }
+
+    return TokenResp(
+        access_token=token,
+        token_type="Bearer",
+        uid=user_obj.id,
+        username=user_obj.username
+    )
+
+
+async def register_service(
+    username: str,
+    password: str,
+    db: AsyncSession
+) -> RegisterResp:
+    """用户注册服务（注册成功后需手动登录）"""
+    # 检查用户名是否已存在
+    result = await db.execute(select(UserModel).where(UserModel.username == username))
+    existing = result.scalar_one_or_none()
+    if existing:
+        raise BusinessException(code=400, msg="该账号已被注册")
+
+    # 创建用户，生成12位随机ID
+    user_obj = UserModel(
+        id=generate_id(),
+        username=username,
+        hashed_password=get_password_hash(password),
+    )
+    db.add(user_obj)
+    await db.commit()
+
+    return RegisterResp(
+        username=username,
+        message="注册成功，请登录"
+    )

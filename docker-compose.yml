@@ -1,0 +1,49 @@
+version: "3.9"
+
+services:
+  # FastAPI 应用
+  api:
+    build: .
+    container_name: rag-agent-api
+    env_file: .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mysql
+      - redis
+    volumes:
+      - ./chroma_db:/app/chroma_db
+      - ./knowledge_base:/app/knowledge_base
+      - ./backend:/app/backend
+      - ./front:/app/front
+      - ./static:/app/static
+    restart: unless-stopped
+
+  # MySQL 数据库
+  mysql:
+    image: mysql:8.0
+    container_name: rag-agent-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: rag_agent_db
+      MYSQL_USER: root
+      MYSQL_PASSWORD: password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: unless-stopped
+
+  # Redis 缓存
+  redis:
+    image: redis:7-alpine
+    container_name: rag-agent-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+  redis_data:

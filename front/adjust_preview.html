@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据预览 - 调整参数</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            background: #f5f6f7;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .app-container { display: flex; height: 100vh; width: 100%; }
+
+        /* ===== 侧边栏 ===== */
+        .sidebar {
+            width: 64px; background: #1a1d29; display: flex; flex-direction: column;
+            align-items: center; padding: 16px 0; flex-shrink: 0;
+        }
+        .sidebar-logo {
+            width: 40px; height: 40px;
+            background: linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%);
+            border-radius: 12px; display: flex; align-items: center; justify-content: center;
+            color: white; margin-bottom: 24px;
+        }
+        .sidebar-nav { flex: 1; display: flex; flex-direction: column; gap: 8px; width: 100%; align-items: center; }
+        .sidebar-item {
+            width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center;
+            justify-content: center; color: #8892a0; cursor: pointer; transition: all 0.2s; position: relative;
+        }
+        .sidebar-item:hover { background: rgba(255, 255, 255, 0.08); color: #ffffff; }
+        .sidebar-item.active { background: rgba(64, 224, 208, 0.2); color: #40E0D0; }
+        .sidebar-item svg { width: 20px; height: 20px; }
+        .sidebar-item .tooltip {
+            position: absolute; left: 56px; background: #2d3748; color: white;
+            padding: 6px 12px; border-radius: 6px; font-size: 12px; white-space: nowrap;
+            opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 100;
+        }
+        .sidebar-item:hover .tooltip { opacity: 1; }
+        .sidebar-bottom { display: flex; flex-direction: column; gap: 8px; width: 100%; align-items: center; }
+        .sidebar-avatar {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%);
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 14px; font-weight: 600; cursor: pointer;
+        }
+
+        /* ===== 主内容区 ===== */
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* 顶部栏 */
+        .top-bar {
+            padding: 16px 24px; background: #ffffff; display: flex; align-items: center; gap: 12px;
+            border-bottom: 1px solid #e8ecf1;
+        }
+        .back-btn {
+            display: flex; align-items: center; gap: 6px; padding: 8px 14px;
+            background: #f5f6f7; border: none; border-radius: 8px; color: #666;
+            font-size: 14px; cursor: pointer; transition: all 0.2s;
+        }
+        .back-btn:hover { background: #e8ecf1; color: #333; }
+
+        /* 内容区 */
+        .content-area {
+            flex: 1; padding: 24px; overflow-y: auto;
+        }
+        .content-area::-webkit-scrollbar { width: 6px; }
+        .content-area::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+
+        /* 步骤条 */
+        .steps-container {
+            background: #fff; border-radius: 12px; padding: 24px 40px;
+            border: 1px solid #e8ecf1; margin-bottom: 20px;
+        }
+        .steps {
+            display: flex; align-items: center; justify-content: space-between;
+            max-width: 700px; margin: 0 auto;
+        }
+        .step {
+            display: flex; align-items: center; gap: 10px;
+        }
+        .step-circle {
+            width: 32px; height: 32px; border-radius: 50%;
+            background: #e8ecf1; color: #9ca3af;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px; font-weight: 600;
+            transition: all 0.3s;
+        }
+        .step.active .step-circle {
+            background: linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%);
+            color: white;
+        }
+        .step.done .step-circle {
+            background: #22c55e; color: white;
+        }
+        .step-text {
+            font-size: 14px; color: #9ca3af; font-weight: 500;
+        }
+        .step.active .step-text { color: #1a1a2e; }
+        .step.done .step-text { color: #22c55e; }
+        .step-line {
+            flex: 1; height: 2px; background: #e8ecf1; margin: 0 16px;
+            min-width: 60px;
+        }
+        .step-line.done { background: #22c55e; }
+
+        /* 文件信息卡片 */
+        .file-info-card {
+            background: #fff; border-radius: 12px; border: 1px solid #e8ecf1;
+            padding: 20px 24px; margin-bottom: 16px;
+        }
+        .file-info-row {
+            display: flex; align-items: center; gap: 16px;
+            padding: 8px 0; border-bottom: 1px solid #f1f5f9;
+        }
+        .file-info-row:last-child { border-bottom: none; }
+        .file-info-label {
+            width: 120px; font-size: 14px; color: #64748b; flex-shrink: 0;
+        }
+        .file-info-value {
+            font-size: 14px; color: #1a1a2e; font-weight: 500;
+        }
+
+        /* 预览区 - 两栏布局 */
+        .preview-section {
+            background: #fff; border-radius: 12px; border: 1px solid #e8ecf1;
+            overflow: hidden; margin-bottom: 16px;
+            display: flex; flex-direction: column;
+        }
+        .preview-main {
+            display: flex; flex: 1; min-height: 500px;
+        }
+        /* 左侧文件列表 */
+        .preview-sidebar {
+            width: 240px; background: #f8fafc;
+            border-right: 1px solid #e8ecf1;
+            display: flex; flex-direction: column;
+        }
+        .preview-sidebar-header {
+            padding: 14px 16px; border-bottom: 1px solid #e8ecf1;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .preview-sidebar-title {
+            font-size: 14px; font-weight: 600; color: #1a1a2e;
+        }
+        .preview-sidebar-count {
+            font-size: 12px; color: #64748b;
+        }
+        .file-list-panel {
+            flex: 1; overflow-y: auto;
+        }
+        .file-list-panel::-webkit-scrollbar { width: 4px; }
+        .file-list-panel::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
+        .file-list-item {
+            padding: 12px 16px; cursor: pointer;
+            border-bottom: 1px solid #e8ecf1;
+            display: flex; align-items: center; gap: 10px;
+            transition: all 0.2s;
+        }
+        .file-list-item:hover { background: #e8ecf1; }
+        .file-list-item.active {
+            background: linear-gradient(135deg, #f0fdfa, #ecfeff);
+            border-left: 3px solid #40E0D0;
+        }
+        .file-list-item-icon {
+            width: 32px; height: 32px; border-radius: 6px;
+            background: #e8ecf1; display: flex; align-items: center;
+            justify-content: center; font-size: 11px; font-weight: 600;
+            color: #64748b; flex-shrink: 0;
+        }
+        .file-list-item.active .file-list-item-icon {
+            background: #40E0D0; color: white;
+        }
+        .file-list-item-info {
+            flex: 1; min-width: 0;
+        }
+        .file-list-item-name {
+            font-size: 13px; font-weight: 500; color: #1a1a2e;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .file-list-item-count {
+            font-size: 11px; color: #9ca3af; margin-top: 2px;
+        }
+        .file-list-item.active .file-list-item-count {
+            color: #0d9488;
+        }
+
+        /* 右侧分块预览 */
+        .preview-content {
+            flex: 1; display: flex; flex-direction: column;
+            min-width: 0;
+        }
+        .preview-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 20px; background: #fff;
+            border-bottom: 1px solid #e8ecf1;
+        }
+        .preview-title {
+            font-size: 15px; font-weight: 600; color: #1a1a2e;
+            display: flex; align-items: center; gap: 8px;
+            border-left: 3px solid #40E0D0; padding-left: 12px;
+        }
+        .preview-stats {
+            font-size: 13px; color: #64748b;
+        }
+        .preview-list {
+            flex: 1; overflow-y: auto;
+            max-height: 500px;
+        }
+        .preview-list::-webkit-scrollbar { width: 6px; }
+        .preview-list::-webkit-scrollbar-track { background: #f1f5f9; }
+        .preview-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .preview-list::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        .preview-item {
+            padding: 16px 24px; border-bottom: 1px solid #f1f5f9;
+            cursor: pointer; transition: background 0.2s;
+        }
+        .preview-item:hover { background: #f8fafc; }
+        .preview-item:last-child { border-bottom: none; }
+        .preview-item-header {
+            display: flex; align-items: center; gap: 8px;
+            margin-bottom: 8px;
+        }
+        .preview-item-index {
+            font-size: 13px; font-weight: 600; color: #40E0D0;
+            background: rgba(64, 224, 208, 0.1); padding: 2px 8px; border-radius: 4px;
+        }
+        .preview-item-sheet {
+            font-size: 12px; color: #64748b;
+        }
+        .preview-item-length {
+            font-size: 12px; color: #9ca3af;
+            margin-left: auto;
+        }
+        .preview-item-content {
+            font-size: 14px; color: #334155; line-height: 1.6;
+            white-space: pre-wrap; word-break: break-word;
+            display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .preview-item.expanded .preview-item-content {
+            display: block;
+        }
+        .preview-expand-btn {
+            margin-top: 8px; font-size: 13px; color: #40E0D0;
+            background: none; border: none; cursor: pointer; padding: 0;
+        }
+        .preview-expand-btn:hover { text-decoration: underline; }
+
+        .empty-preview {
+            padding: 40px 20px; text-align: center; color: #9ca3af;
+        }
+
+        /* 底部操作栏 */
+        .footer-actions {
+            display: flex; justify-content: flex-end; gap: 12px;
+            padding-top: 8px;
+        }
+        .btn {
+            padding: 10px 24px; border: none; border-radius: 8px;
+            font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s;
+            display: inline-flex; align-items: center; gap: 6px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%);
+            color: white;
+        }
+        .btn-primary:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-secondary { background: #fff; color: #64748b; border: 1px solid #e8ecf1; }
+        .btn-secondary:hover { background: #f8fafc; }
+
+        /* Toast */
+        .toast {
+            position: fixed; top: 20px; right: 20px; padding: 14px 20px;
+            border-radius: 12px; color: white; font-size: 14px; z-index: 2000;
+            animation: slideIn 0.3s; display: none;
+        }
+        .toast.show { display: block; }
+        .toast.success { background: #2ed573; }
+        .toast.error { background: #ff4757; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(100%); } to { opacity: 1; transform: translateX(0); } }
+    </style>
+    <script src="/front/js/auth.js?v=20260801"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 侧边栏 -->
+        <div class="sidebar">
+            <div class="sidebar-logo">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="10" rx="2"></rect>
+                    <circle cx="12" cy="5" r="2"></circle>
+                    <path d="M12 7v4"></path>
+                </svg>
+            </div>
+            <div class="sidebar-nav">
+                <div class="sidebar-item" onclick="location.href='/front/'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    <span class="tooltip">对话</span>
+                </div>
+                <div class="sidebar-item active">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                    </svg>
+                    <span class="tooltip">知识库</span>
+                </div>
+                <div class="sidebar-item" onclick="location.href='/front/workbench.html'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>
+                    <span class="tooltip">工作台</span>
+                </div>
+                <div class="sidebar-item" onclick="location.href='/front/account.html'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <span class="tooltip">账号</span>
+                </div>
+            </div>
+            <div class="sidebar-bottom">
+                <div class="sidebar-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
+                    <span class="tooltip">帮助</span>
+                </div>
+                <div class="sidebar-avatar" onclick="location.href='/front/account.html'">U</div>
+            </div>
+        </div>
+
+        <!-- 主内容 -->
+        <div class="main-content">
+            <!-- 顶部栏 -->
+            <div class="top-bar">
+                <button class="back-btn" onclick="goBack()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                    上一步
+                </button>
+            </div>
+
+            <!-- 内容区 -->
+            <div class="content-area">
+                <!-- 步骤条 -->
+                <div class="steps-container">
+                    <div class="steps">
+                        <div class="step done" id="step1">
+                            <div class="step-circle">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </div>
+                            <div class="step-text">调整参数</div>
+                        </div>
+                        <div class="step-line done" id="line1"></div>
+                        <div class="step active" id="step2">
+                            <div class="step-circle">2</div>
+                            <div class="step-text">数据预览</div>
+                        </div>
+                        <div class="step-line" id="line2"></div>
+                        <div class="step" id="step3">
+                            <div class="step-circle">3</div>
+                            <div class="step-text">确认上传</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 文件信息 -->
+                <div class="file-info-card">
+                    <div class="file-info-row">
+                        <div class="file-info-label">文件名</div>
+                        <div class="file-info-value" id="fileName">-</div>
+                    </div>
+                    <div class="file-info-row">
+                        <div class="file-info-label">分块参数</div>
+                        <div class="file-info-value" id="chunkParams">-</div>
+                    </div>
+                </div>
+
+                <!-- 分块预览 - 两栏布局 -->
+                <div class="preview-section">
+                    <div class="preview-main">
+                        <!-- 左侧文件列表 -->
+                        <div class="preview-sidebar">
+                            <div class="preview-sidebar-header">
+                                <div class="preview-sidebar-title">文件列表</div>
+                                <div class="preview-sidebar-count" id="fileListCount">-</div>
+                            </div>
+                            <div class="file-list-panel" id="fileListPanel">
+                                <div class="empty-preview">加载中...</div>
+                            </div>
+                        </div>
+                        
+                        <!-- 右侧分块预览 -->
+                        <div class="preview-content">
+                            <div class="preview-header">
+                                <div class="preview-title">分块预览</div>
+                                <div class="preview-stats" id="previewStats">-</div>
+                            </div>
+                            <div class="preview-list" id="previewList">
+                                <div class="empty-preview">请选择左侧文件查看分块</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 底部操作 -->
+                <div class="footer-actions">
+                    <button class="btn btn-primary" id="nextBtn" onclick="goToNextStep()">
+                        下一步
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const kbId = urlParams.get('kb_id') || '';
+    const docId = urlParams.get('doc_id') || '';
+
+    let previewResults = [];
+    try {
+        const rawPreview = sessionStorage.getItem('adjust_preview_results');
+        console.log('[adjust_preview] 读取 adjust_preview_results:', {
+            exists: rawPreview !== null,
+            size: rawPreview ? rawPreview.length : 0
+        });
+        previewResults = JSON.parse(rawPreview || '[]');
+        console.log('[adjust_preview] 解析后 previewResults:', {
+            length: previewResults.length,
+            firstFile: previewResults[0] ? {
+                file_name: previewResults[0].file_name,
+                total_chunks: previewResults[0].total_chunks,
+                preview_chunks_count: previewResults[0].preview_chunks ? previewResults[0].preview_chunks.length : 0
+            } : null
+        });
+    } catch (e) {
+        console.error('[adjust_preview] 解析 adjust_preview_results 失败:', e);
+        previewResults = [];
+    }
+
+    if (previewResults.length === 0) {
+        showToast('预览数据已失效，正在返回...', 'error');
+        setTimeout(() => {
+            location.href = `/front/adjust_params.html?kb_id=${kbId}&doc_id=${docId}`;
+        }, 1000);
+    }
+
+    const expandedMap = {};
+    let currentFileIndex = 0;
+
+    function goBack() {
+        location.href = `/front/adjust_params.html?kb_id=${kbId}&doc_id=${docId}`;
+    }
+
+    function goToNextStep() {
+        if (previewResults.length === 0) {
+            showToast('预览数据不存在，请返回重新生成', 'error');
+            return;
+        }
+        location.href = `/front/adjust_confirm.html?kb_id=${kbId}&doc_id=${docId}`;
+    }
+
+    function getFileExt(name) {
+        if (!name) return 'FILE';
+        const ext = name.split('.').pop().toUpperCase();
+        return ext || 'FILE';
+    }
+
+    function renderFileList() {
+        const panel = document.getElementById('fileListPanel');
+        const countEl = document.getElementById('fileListCount');
+        
+        if (previewResults.length === 0) {
+            panel.innerHTML = '<div class="empty-preview">暂无文件</div>';
+            countEl.textContent = '0 个文件';
+            return;
+        }
+
+        countEl.textContent = `${previewResults.length} 个文件`;
+
+        let html = '';
+        previewResults.forEach((fileResult, idx) => {
+            const fileName = fileResult._orig_name || fileResult.file_name || '文件';
+            const totalChunks = fileResult.total_chunks || 0;
+            const ext = getFileExt(fileName);
+            
+            html += `
+                <div class="file-list-item ${idx === currentFileIndex ? 'active' : ''}" 
+                     data-index="${idx}" onclick="selectFile(${idx})">
+                    <div class="file-list-item-icon">${ext.substring(0, 4)}</div>
+                    <div class="file-list-item-info">
+                        <div class="file-list-item-name" title="${escapeHtml(fileName)}">${escapeHtml(fileName)}</div>
+                        <div class="file-list-item-count">${totalChunks} 个分块</div>
+                    </div>
+                </div>
+            `;
+        });
+        panel.innerHTML = html;
+    }
+
+    function selectFile(index) {
+        if (index < 0 || index >= previewResults.length) return;
+        currentFileIndex = index;
+        renderFileList();
+        renderFilePreview();
+    }
+
+    function renderFilePreview() {
+        const listEl = document.getElementById('previewList');
+        const statsEl = document.getElementById('previewStats');
+        
+        if (previewResults.length === 0) {
+            listEl.innerHTML = '<div class="empty-preview">请返回上一步重新生成预览</div>';
+            statsEl.textContent = '-';
+            return;
+        }
+
+        const fileResult = previewResults[currentFileIndex];
+        const chunks = fileResult.preview_chunks || [];
+        const totalChunks = fileResult.total_chunks || 0;
+        const fileName = fileResult._orig_name || fileResult.file_name || '文件';
+        const allChunks = previewResults.reduce((sum, p) => sum + (p.total_chunks || 0), 0);
+
+        statsEl.textContent = `当前文件: ${totalChunks} 个分块，预览前 ${chunks.length} 个 | 总计 ${allChunks} 个分块`;
+
+        if (chunks.length === 0) {
+            listEl.innerHTML = '<div class="empty-preview">该文件无分块数据</div>';
+            return;
+        }
+
+        let html = '';
+        chunks.forEach((chunk, i) => {
+            const globalIdx = `${currentFileIndex}-${i}`;
+            const sheetLabel = chunk.sheet_name ? `<div class="preview-item-sheet">来源: ${escapeHtml(chunk.sheet_name)}</div>` : '';
+            html += `
+                <div class="preview-item" data-index="${globalIdx}" onclick="toggleChunk('${globalIdx}')">
+                    <div class="preview-item-header">
+                        <div class="preview-item-index">分块 #${chunk.index}</div>
+                        ${sheetLabel}
+                        <div class="preview-item-length">${chunk.length} 字符</div>
+                    </div>
+                    <div class="preview-item-content">${escapeHtml(chunk.content)}</div>
+                    <button class="preview-expand-btn" onclick="event.stopPropagation(); toggleChunk('${globalIdx}')">展开查看</button>
+                </div>
+            `;
+        });
+        listEl.innerHTML = html;
+    }
+
+    function renderPreview() {
+        if (previewResults.length === 0) {
+            document.getElementById('fileName').textContent = '暂无预览数据';
+            document.getElementById('fileListPanel').innerHTML = '<div class="empty-preview">请返回上一步重新生成预览</div>';
+            document.getElementById('previewList').innerHTML = '<div class="empty-preview">无数据</div>';
+            document.getElementById('nextBtn').disabled = true;
+            return;
+        }
+
+        let config = {};
+        try {
+            config = JSON.parse(sessionStorage.getItem('adjust_config') || '{}');
+        } catch (e) {
+            console.error('解析 adjust_config 失败:', e);
+        }
+
+        if (previewResults.length > 1) {
+            document.getElementById('fileName').textContent = `共 ${previewResults.length} 个文件`;
+        } else {
+            document.getElementById('fileName').textContent = previewResults[0].file_name || '-';
+        }
+        document.getElementById('chunkParams').textContent =
+            `分块大小: ${config.chunk_size || 500}, 重叠: ${config.chunk_overlap || 50}`;
+
+        renderFileList();
+        renderFilePreview();
+
+        document.getElementById('nextBtn').disabled = false;
+    }
+
+    function toggleChunk(index) {
+        const el = document.querySelector(`.preview-item[data-index="${index}"]`);
+        if (el) {
+            el.classList.toggle('expanded');
+            const btn = el.querySelector('.preview-expand-btn');
+            if (btn) {
+                btn.textContent = el.classList.contains('expanded') ? '收起' : '展开查看';
+            }
+        }
+    }
+
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str || '';
+        return div.innerHTML;
+    }
+
+    function showToast(message, type = 'success') {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.className = `toast ${type} show`;
+        setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    renderPreview();
+    </script>
+</body>
+</html>

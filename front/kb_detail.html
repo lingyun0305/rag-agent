@@ -1,0 +1,1754 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>知识库详情 - AI对话助手</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            background: #f5f6f7;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .app-container { display: flex; height: 100vh; width: 100%; }
+
+        /* ===== 侧边栏 ===== */
+        .sidebar {
+            width: 64px; background: #1a1d29; display: flex; flex-direction: column;
+            align-items: center; padding: 16px 0; flex-shrink: 0;
+        }
+        .sidebar-logo {
+            width: 40px; height: 40px;
+            background: linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%);
+            border-radius: 12px; display: flex; align-items: center; justify-content: center;
+            color: white; margin-bottom: 24px;
+        }
+        .sidebar-nav { flex: 1; display: flex; flex-direction: column; gap: 8px; width: 100%; align-items: center; }
+        .sidebar-item {
+            width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center;
+            justify-content: center; color: #8892a0; cursor: pointer; transition: all 0.2s; position: relative;
+        }
+        .sidebar-item:hover { background: rgba(255, 255, 255, 0.08); color: #ffffff; }
+        .sidebar-item.active { background: rgba(64, 224, 208, 0.2); color: #40E0D0; }
+        .sidebar-item svg { width: 20px; height: 20px; }
+        .sidebar-item .tooltip {
+            position: absolute; left: 56px; background: #2d3748; color: white;
+            padding: 6px 12px; border-radius: 6px; font-size: 12px; white-space: nowrap;
+            opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 100;
+        }
+        .sidebar-item:hover .tooltip { opacity: 1; }
+        .sidebar-bottom { display: flex; flex-direction: column; gap: 8px; width: 100%; align-items: center; }
+        .sidebar-avatar {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%);
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 14px; font-weight: 600; cursor: pointer;
+        }
+
+        /* ===== 主内容区 ===== */
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* 顶部栏 */
+        .top-bar {
+            padding: 12px 24px; background: #ffffff; display: flex; align-items: center; gap: 12px;
+            border-bottom: 1px solid #e8ecf1;
+        }
+        .back-btn {
+            display: flex; align-items: center; gap: 4px; padding: 8px 12px;
+            background: #f5f6f7; border: none; border-radius: 8px; color: #666;
+            font-size: 14px; cursor: pointer; transition: all 0.2s;
+        }
+        .back-btn:hover { background: #e8ecf1; color: #333; }
+
+        .top-bar-title { font-size: 16px; font-weight: 600; color: #1a1a2e; }
+        .top-bar-actions { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+
+        /* 面包屑 */
+        .breadcrumb {
+            display: flex; align-items: center; gap: 6px; padding: 10px 24px;
+            font-size: 13px; color: #8892a0; background: #fff; border-bottom: 1px solid #e8ecf1;
+        }
+        .breadcrumb-item { cursor: pointer; color: #40E0D0; }
+        .breadcrumb-item:hover { text-decoration: underline; }
+        .breadcrumb-sep { color: #d1d5db; }
+        .breadcrumb-current { color: #333; font-weight: 500; }
+
+        /* 内容区 */
+        .content-area {
+            flex: 1; display: flex; gap: 20px; padding: 20px 24px;
+            overflow: hidden;
+        }
+
+        /* 左侧信息面板 */
+        .info-panel {
+            width: 380px; flex-shrink: 0; display: flex; flex-direction: column; gap: 16px;
+            overflow-y: auto;
+        }
+        .info-panel::-webkit-scrollbar { width: 4px; }
+        .info-panel::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
+
+        .info-card {
+            background: #fff; border-radius: 12px; padding: 20px; border: 1px solid #e8ecf1;
+        }
+        .info-card-title {
+            font-size: 13px; font-weight: 600; color: #64748b; margin-bottom: 12px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .edit-btn {
+            font-size: 12px; color: #40E0D0; background: none; border: none;
+            cursor: pointer; padding: 2px 6px; border-radius: 4px;
+        }
+        .edit-btn:hover { background: rgba(64, 224, 208, 0.1); }
+
+        .field-group { margin-bottom: 14px; }
+        .field-group:last-child { margin-bottom: 0; }
+        .field-label { font-size: 12px; color: #9ca3af; margin-bottom: 4px; }
+        .field-value {
+            font-size: 14px; color: #1a1a2e; line-height: 1.5;
+            min-height: 20px;
+        }
+        .field-input {
+            width: 100%; padding: 8px 12px; border: 1px solid #e8ecf1; border-radius: 8px;
+            font-size: 14px; color: #1a1a2e; outline: none; transition: all 0.2s;
+            background: #fff;
+        }
+        .field-input:focus { border-color: #40E0D0; box-shadow: 0 0 0 3px rgba(64, 224, 208, 0.15); }
+        .field-textarea {
+            width: 100%; padding: 8px 12px; border: 1px solid #e8ecf1; border-radius: 8px;
+            font-size: 14px; color: #1a1a2e; outline: none; resize: vertical;
+            min-height: 60px; font-family: inherit;
+        }
+        .field-textarea:focus { border-color: #40E0D0; box-shadow: 0 0 0 3px rgba(64, 224, 208, 0.15); }
+        .field-id {
+            font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+            font-size: 13px; color: #64748b; background: #f8fafc;
+            padding: 6px 10px; border-radius: 6px; display: inline-block;
+            max-width: 100%; word-break: break-all;
+        }
+
+        .type-tag {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 3px 10px; background: #dbeafe; color: #2563eb;
+            border-radius: 10px; font-size: 12px;
+        }
+
+        /* 协作者列表 */
+        .member-list { display: flex; flex-direction: column; gap: 10px; }
+        .member-item {
+            display: flex; align-items: center; gap: 10px; padding: 10px;
+            background: #f8fafc; border-radius: 8px;
+        }
+        .member-avatar {
+            width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 13px; font-weight: 600;
+        }
+        .member-info { flex: 1; min-width: 0; }
+        .member-name { font-size: 13px; color: #1a1a2e; font-weight: 500; }
+        .member-role { font-size: 11px; color: #9ca3af; }
+        .member-badge {
+            font-size: 11px; padding: 2px 8px; border-radius: 8px;
+        }
+        .member-badge.owner { background: #dcfce7; color: #16a34a; }
+        .member-badge.admin { background: #dbeafe; color: #2563eb; }
+        .member-badge.write { background: #fef3c7; color: #d97706; }
+        .member-badge.read { background: #f1f5f9; color: #64748b; }
+
+        .add-member-btn {
+            width: 100%; padding: 10px; background: none; border: 1px dashed #d9d9d9;
+            border-radius: 8px; color: #64748b; font-size: 13px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            transition: all 0.2s;
+        }
+        .add-member-btn:hover { border-color: #40E0D0; color: #40E0D0; background: #f0fdfa; }
+
+        /* 右侧文档区 */
+        .doc-panel {
+            flex: 1; background: #fff; border-radius: 12px; border: 1px solid #e8ecf1;
+            display: flex; flex-direction: column; overflow: hidden;
+        }
+        .doc-panel-header {
+            padding: 16px 20px; border-bottom: 1px solid #e8ecf1;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .doc-panel-title { font-size: 15px; font-weight: 600; color: #1a1a2e; }
+        .doc-panel-actions { display: flex; align-items: center; gap: 10px; }
+        .batch-delete-btn {
+            padding: 8px 14px; background: #fef2f2; color: #ef4444;
+            border: 1px solid #fecaca; border-radius: 8px; font-size: 14px;
+            cursor: pointer; display: none; align-items: center; gap: 6px;
+            transition: all 0.2s;
+        }
+        .batch-delete-btn:hover { background: #fee2e2; }
+        .batch-delete-btn.show { display: flex; }
+
+        .search-input {
+            padding: 8px 12px 8px 34px; border: 1px solid #e8ecf1; border-right: none;
+            border-radius: 8px 0 0 8px;
+            font-size: 14px; color: #2d3748; outline: none; transition: all 0.2s;
+            width: 200px;
+        }
+        .search-input:focus { border-color: #40E0D0; box-shadow: none; }
+        .search-input::placeholder { color: #9ca3af; }
+        .search-doc-btn {
+            display: flex; align-items: center; justify-content: center;
+            width: 36px; height: 37px; background: #40E0D0; color: white;
+            border: 1px solid #40E0D0; border-radius: 0 8px 8px 0;
+            cursor: pointer; transition: background 0.2s;
+        }
+        .search-doc-btn:hover { background: #2CC5B5; border-color: #2CC5B5; }
+
+        .upload-btn {
+            padding: 8px 16px; background: linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%);
+            color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 500;
+            cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s;
+        }
+        .upload-btn:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(64, 224, 208, 0.3); }
+        .upload-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .upload-menu-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 12px 16px; cursor: pointer;
+            font-size: 14px; color: #334155;
+            transition: background 0.15s;
+        }
+        .upload-menu-item:hover { background: #f0fdfa; color: #0d9488; }
+
+        /* 文本数据集弹窗 */
+        .source-modal {
+            display: none; position: fixed; inset: 0;
+            background: rgba(15, 23, 42, 0.5);
+            justify-content: center; align-items: center; z-index: 200;
+        }
+        .source-modal.show { display: flex; }
+        .source-modal-content {
+            background: white; border-radius: 16px;
+            padding: 28px; width: 480px; max-width: 90%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        }
+        .source-modal-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 24px;
+        }
+        .source-modal-title {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 18px; font-weight: 600; color: #1a1a2e;
+        }
+        .source-close {
+            background: none; border: none; font-size: 24px;
+            cursor: pointer; color: #9ca3af; padding: 0; line-height: 1;
+        }
+        .source-close:hover { color: #333; }
+        .source-options { display: flex; flex-direction: column; gap: 12px; }
+        .source-option {
+            display: flex; align-items: center; gap: 14px;
+            padding: 16px; border: 2px solid #e8ecf1;
+            border-radius: 12px; cursor: pointer;
+            transition: all 0.2s;
+        }
+        .source-option:hover { border-color: #40E0D0; background: #f0fdfa; }
+        .source-option.selected { border-color: #40E0D0; background: #f0fdfa; }
+        .source-option-radio {
+            width: 20px; height: 20px; border: 2px solid #cbd5e1;
+            border-radius: 50%; display: flex;
+            align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .source-option.selected .source-option-radio {
+            border-color: #40E0D0;
+        }
+        .source-option.selected .source-option-radio::after {
+            content: ''; width: 8px; height: 8px;
+            background: #40E0D0; border-radius: 50%;
+        }
+        .source-option-info { display: flex; flex-direction: column; }
+        .source-option-name { font-size: 15px; font-weight: 500; color: #1a1a2e; }
+        .source-option-desc { font-size: 13px; color: #64748b; margin-top: 2px; }
+        .source-modal-footer {
+            display: flex; justify-content: flex-end; gap: 12px;
+            margin-top: 28px;
+        }
+
+        .filter-select {
+            padding: 7px 10px; border: 1px solid #e8ecf1; border-radius: 8px;
+            font-size: 13px; color: #333; outline: none; background: white; cursor: pointer;
+        }
+
+        .doc-table-wrapper { flex: 1; overflow-y: auto; padding: 12px 20px 20px 20px; }
+        .doc-table-wrapper::-webkit-scrollbar { width: 6px; }
+        .doc-table-wrapper::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+
+        /* 表头 */
+        .doc-list-header {
+            display: flex; align-items: center;
+            padding: 12px 16px;
+            background: #f8fafc; border-radius: 10px;
+            font-size: 13px; font-weight: 600; color: #64748b;
+            margin-bottom: 6px;
+        }
+        .doc-list-header .col-check { width: 36px; display: flex; align-items: center; }
+        .doc-list-header .col-name { flex: 2; display: flex; align-items: center; gap: 10px; padding-left: 8px; }
+        .doc-list-header .col-mode { flex: 1; }
+        .doc-list-header .col-count { flex: 1; }
+        .doc-list-header .col-time { flex: 1.3; }
+        .doc-list-header .col-status { flex: 0.9; }
+        .doc-list-header .col-enable { flex: 0.9; }
+        .doc-list-header .col-action { width: 60px; text-align: right; }
+
+        .custom-check {
+            width: 16px; height: 16px; border: 1.5px solid #cbd5e1; border-radius: 4px;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            background: white; transition: all 0.15s; flex-shrink: 0;
+        }
+        .custom-check:hover { border-color: #40E0D0; }
+        .custom-check.checked { background: #40E0D0; border-color: #40E0D0; }
+        .custom-check.checked::after {
+            content: ''; width: 4px; height: 8px;
+            border-right: 2px solid white; border-bottom: 2px solid white;
+            transform: rotate(45deg); margin-top: -2px;
+        }
+
+        /* 启用开关 */
+        .enable-toggle {
+            position: relative; display: inline-block; width: 38px; height: 22px;
+        }
+        .enable-toggle input { opacity: 0; width: 0; height: 0; }
+        .enable-toggle-slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #e2e8f0; transition: .2s; border-radius: 22px;
+        }
+        .enable-toggle-slider:before {
+            position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px;
+            background-color: white; transition: .2s; border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        input:checked + .enable-toggle-slider { background-color: #40E0D0; }
+        input:checked + .enable-toggle-slider:before { transform: translateX(16px); }
+
+        /* 文档行 */
+        .doc-list-item {
+            display: flex; align-items: center;
+            padding: 12px 16px;
+            background: white; border-radius: 10px;
+            font-size: 14px; color: #333;
+            border: 1px solid transparent;
+            transition: all 0.15s;
+            margin-bottom: 6px;
+        }
+        .doc-list-item:hover { background: #f8fafc; border-color: #e8ecf1; }
+        .doc-list-item .col-check { width: 36px; display: flex; align-items: center; }
+        .doc-list-item .col-name {
+            flex: 2; display: flex; align-items: center; gap: 10px; padding-left: 8px;
+            min-width: 0;
+        }
+        .doc-list-item .col-mode { flex: 1; color: #64748b; }
+        .doc-list-item .col-count { flex: 1; color: #334155; font-weight: 500; }
+        .doc-list-item .col-time { flex: 1.3; color: #475569; font-size: 13px; line-height: 1.5; }
+        .doc-list-item .col-status { flex: 0.9; }
+        .doc-list-item .col-enable { flex: 0.9; display: flex; align-items: center; }
+        .doc-list-item .col-action { width: 60px; text-align: right; position: relative; }
+
+        .doc-name-cell { display: flex; align-items: center; gap: 10px; min-width: 0; }
+        .doc-icon {
+            width: 32px; height: 32px; border-radius: 6px; display: flex;
+            align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; font-weight: 600;
+        }
+        .doc-icon.pdf { background: #fee2e2; color: #ef4444; }
+        .doc-icon.docx { background: #dbeafe; color: #2563eb; }
+        .doc-icon.txt, .doc-icon.md { background: #e0e7ff; color: #7c3aed; }
+        .doc-icon.csv { background: #dcfce7; color: #16a34a; }
+        .doc-icon.folder { background: #fef3c7; color: #D97706; }
+        .doc-icon.default { background: #f1f5f9; color: #64748b; }
+        .doc-info { display: flex; flex-direction: column; }
+        .doc-file-name { font-weight: 500; color: #1a1a2e; }
+        .doc-file-type { font-size: 12px; color: #9ca3af; }
+
+        .status-badge {
+            padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 500;
+            display: inline-flex; align-items: center; gap: 4px;
+        }
+        .status-badge.completed { background: #dcfce7; color: #16a34a; }
+        .status-badge.processing { background: #dbeafe; color: #2563eb; }
+        .status-badge.pending { background: #fef3c7; color: #d97706; }
+        .status-badge.failed { background: #fee2e2; color: #ef4444; }
+        .status-badge.deleted { background: #f1f5f9; color: #64748b; }
+
+        .doc-action-btn {
+            padding: 6px; border: none; background: transparent; border-radius: 6px;
+            cursor: pointer; color: #9ca3af; transition: all 0.2s;
+        }
+        .doc-action-btn:hover { background: #f3f4f6; color: #374151; }
+        .doc-action-btn.danger:hover { background: #fef2f2; color: #ef4444; }
+
+        /* 空状态 */
+        .empty-state {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 60px 20px; color: #999;
+        }
+        .empty-state .icon { font-size: 48px; margin-bottom: 12px; color: #ddd; }
+        .empty-state h3 { font-size: 15px; font-weight: 500; color: #666; margin-bottom: 6px; }
+        .empty-state p { font-size: 13px; color: #999; margin-bottom: 16px; }
+
+        /* 模态框 */
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); display: none;
+            justify-content: center; align-items: center; z-index: 1000;
+        }
+        .modal.show { display: flex; }
+        .modal-content { background: white; border-radius: 16px; padding: 24px; width: 440px; max-width: 90%; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .modal-title { flex: 1; text-align: center; font-size: 18px; font-weight: 600; color: #333; }
+        .modal-close {
+            width: 32px; height: 32px; border: none; background: #f5f5f5; border-radius: 50%;
+            cursor: pointer; font-size: 20px; color: #666; display: flex;
+            justify-content: center; align-items: center;
+        }
+        .modal-body { margin-bottom: 20px; }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 12px; }
+
+        .btn { padding: 8px 16px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s; }
+        .btn-primary { background: linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%); color: white; }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-secondary { background: #ffffff; color: #666; border: 1px solid #d9d9d9; }
+        .btn-secondary:hover { background: #f5f5f5; }
+        .btn-danger { color: white; background-color: #ef4444; }
+
+        .file-input { display: none; }
+
+        /* Toast */
+        .toast {
+            position: fixed; top: 20px; right: 20px; padding: 14px 20px;
+            border-radius: 12px; color: white; font-size: 14px; z-index: 2000;
+            animation: slideIn 0.3s; display: none;
+        }
+        .toast.show { display: block; }
+        .toast.success { background: #2ed573; }
+        .toast.error { background: #ff4757; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(100%); } to { opacity: 1; transform: translateX(0); } }
+
+        /* ===== 文件详情视图 ===== */
+        .file-detail-view {
+            display: none; flex: 1; flex-direction: column; overflow: hidden;
+        }
+        .file-detail-view.show { display: flex; }
+        .file-detail-view.hide { display: none; }
+
+        .file-detail-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 16px 24px; background: #fff; border-bottom: 1px solid #e8ecf1;
+        }
+        .file-detail-title {
+            display: flex; align-items: center; gap: 12px;
+        }
+        .file-detail-name {
+            font-size: 18px; font-weight: 600; color: #1a1a2e;
+        }
+        .file-detail-actions {
+            display: flex; align-items: center; gap: 12px;
+        }
+        .file-detail-btn {
+            padding: 8px 16px; border: 1px solid #e8ecf1; border-radius: 8px;
+            background: #fff; color: #475569; font-size: 14px; cursor: pointer;
+            display: flex; align-items: center; gap: 6px; transition: all 0.2s;
+        }
+        .file-detail-btn:hover { background: #f8fafc; border-color: #cbd5e1; color: #334155; }
+        .file-detail-btn.primary {
+            background: linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%);
+            color: white; border: none;
+        }
+        .file-detail-btn.primary:hover { opacity: 0.9; }
+
+        .file-detail-toolbar {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 24px; background: #fff; border-bottom: 1px solid #e8ecf1;
+        }
+        .file-detail-count {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 14px; color: #64748b;
+        }
+        .file-detail-count strong {
+            color: #1a1a2e; font-weight: 600;
+        }
+        .file-detail-search {
+            position: relative; width: 280px;
+        }
+        .file-detail-search input {
+            width: 100%; padding: 8px 12px 8px 36px;
+            border: 1px solid #e8ecf1; border-radius: 8px;
+            font-size: 14px; color: #2d3748; outline: none; transition: all 0.2s;
+        }
+        .file-detail-search input:focus {
+            border-color: #40E0D0; box-shadow: 0 0 0 3px rgba(64, 224, 208, 0.15);
+        }
+        .file-detail-search svg {
+            position: absolute; left: 12px; top: 50%;
+            transform: translateY(-50%); width: 16px; height: 16px;
+            color: #9ca3af;
+        }
+
+        .file-detail-content {
+            flex: 1; overflow-y: auto; padding: 20px 24px;
+            background: #f5f6f7;
+        }
+        .file-detail-content::-webkit-scrollbar { width: 15px; }
+        .file-detail-content::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+
+        .chunk-list {
+            display: flex; flex-direction: column; gap: 12px; width: 100%;
+        }
+        .chunk-item {
+            background: #fff; border-radius: 12px; padding: 16px 20px;
+            border: 1px solid #e8ecf1; transition: all 0.2s;
+        }
+        .chunk-item:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+
+        .chunk-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .chunk-header-left {
+            display: flex; align-items: center; gap: 8px;
+        }
+        .chunk-index {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 4px 12px; background: #f0f9ff;
+            color: #0d9488; border-radius: 6px;
+            font-size: 13px; font-weight: 600;
+        }
+        .chunk-index svg { width: 14px; height: 14px; }
+        .chunk-sheet-label {
+            font-size: 12px; color: #64748b;
+        }
+        .chunk-length {
+            font-size: 12px; color: #9ca3af;
+        }
+        .chunk-content {
+            font-size: 14px; line-height: 1.7; color: #334155;
+            max-height: 100px; overflow: hidden;
+            transition: max-height 0.3s ease;
+            white-space: pre-wrap; word-break: break-word;
+        }
+        .chunk-content.expanded { max-height: 1000px; }
+        .chunk-content.collapsed::after {
+            content: ''; display: block; height: 30px;
+            background: linear-gradient(to bottom, transparent, #fff);
+            margin-top: -30px;
+        }
+        .chunk-toggle {
+            margin-top: 8px; padding: 0; background: none; border: none;
+            color: #40E0D0; font-size: 13px; cursor: pointer;
+            display: flex; align-items: center; gap: 4px;
+        }
+        .chunk-toggle:hover { color: #20B2AA; }
+        .chunk-toggle svg { width: 14px; height: 14px; }
+        .chunk-toggle.expanded svg { transform: rotate(180deg); }
+
+        .chunk-empty {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 60px 20px; color: #999;
+        }
+        .chunk-empty .icon { font-size: 48px; margin-bottom: 12px; }
+        .chunk-empty h3 { font-size: 15px; font-weight: 500; color: #666; margin-bottom: 6px; }
+        .chunk-empty p { font-size: 13px; color: #999; }
+
+        .chunk-loading {
+            display: flex; align-items: center; justify-content: center;
+            padding: 60px 20px; color: #999; font-size: 14px;
+        }
+
+        /* 隐藏内容区 */
+        .content-area.hidden { display: none; }
+    </style>
+    <script src="/front/js/auth.js?v=20260802"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 侧边栏 -->
+        <div class="sidebar">
+            <div class="sidebar-logo">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="10" rx="2"></rect>
+                    <circle cx="12" cy="5" r="2"></circle>
+                    <path d="M12 7v4"></path>
+                </svg>
+            </div>
+            <div class="sidebar-nav">
+                <div class="sidebar-item" onclick="location.href='/front/'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    <span class="tooltip">对话</span>
+                </div>
+                <div class="sidebar-item active">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                    </svg>
+                    <span class="tooltip">知识库</span>
+                </div>
+                <div class="sidebar-item" onclick="location.href='/front/workbench.html'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>
+                    <span class="tooltip">工作台</span>
+                </div>
+                <div class="sidebar-item" onclick="location.href='/front/account.html'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <span class="tooltip">账号</span>
+                </div>
+            </div>
+            <div class="sidebar-bottom">
+                <div class="sidebar-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
+                    <span class="tooltip">帮助</span>
+                </div>
+                <div class="sidebar-avatar" onclick="location.href='/front/account.html'">U</div>
+            </div>
+        </div>
+
+        <!-- 主内容 -->
+        <div class="main-content">
+            <!-- 顶部栏 -->
+            <div class="top-bar">
+                <button class="back-btn" onclick="handleBack()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                    返回
+                </button>
+                <div class="top-bar-actions">
+                    <input type="file" id="fileInput" class="file-input" multiple
+                        accept=".pdf,.txt,.md,.docx,.csv,.pptx,.xlsx"
+                        onchange="handleFileUpload(event)">
+                </div>
+            </div>
+
+            <!-- 面包屑 -->
+            <div class="breadcrumb" id="breadcrumb">
+                <span class="breadcrumb-item" onclick="location.href='/front/knowledge.html'">我的知识库</span>
+                <span class="breadcrumb-sep">/</span>
+                <span class="breadcrumb-current" id="breadcrumbCurrent">加载中...</span>
+            </div>
+
+            <!-- 内容区 -->
+            <div class="content-area">
+                <!-- 左侧信息面板 -->
+                <div class="info-panel">
+                    <!-- 基本信息卡片 -->
+                    <div class="info-card">
+                        <div class="info-card-title">
+                            <span>基本信息</span>
+                            <button class="edit-btn" id="editBasicBtn" onclick="toggleEditBasic()">编辑</button>
+                        </div>
+                        <div id="basicView">
+                            <div class="field-group">
+                                <div class="field-label">名称</div>
+                                <div class="field-value" id="viewName">加载中...</div>
+                            </div>
+                            <div class="field-group">
+                                <div class="field-label">类型</div>
+                                <div class="field-value"><span class="type-tag" id="viewType">通用知识库</span></div>
+                            </div>
+                            <div class="field-group">
+                                <div class="field-label">描述</div>
+                                <div class="field-value" id="viewDesc" style="color:#9ca3af;">暂无描述</div>
+                            </div>
+                            <div class="field-group">
+                                <div class="field-label">ID</div>
+                                <div class="field-value"><span class="field-id" id="viewId">-</span></div>
+                            </div>
+                        </div>
+                        <div id="basicEdit" style="display:none;">
+                            <div class="field-group">
+                                <div class="field-label">名称</div>
+                                <input type="text" class="field-input" id="editName">
+                            </div>
+                            <div class="field-group">
+                                <div class="field-label">描述</div>
+                                <textarea class="field-textarea" id="editDesc"></textarea>
+                            </div>
+                            <div style="display:flex;gap:8px;">
+                                <button class="btn btn-primary" onclick="saveBasicEdit()">保存</button>
+                                <button class="btn btn-secondary" onclick="cancelBasicEdit()">取消</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 协作者卡片 -->
+                    <div class="info-card">
+                        <div class="info-card-title">
+                            <span>协作者</span>
+                            <button class="edit-btn" onclick="showToast('邀请协作者功能开发中', 'success')">+ 邀请</button>
+                        </div>
+                        <div class="member-list" id="memberList">
+                            <div class="member-item" style="color:#9ca3af;justify-content:center;">加载中...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右侧文档区 -->
+                <div class="doc-panel">
+                    <div class="doc-panel-header">
+                        <span class="doc-panel-title">文件列表</span>
+                        <div class="doc-panel-actions">
+                            <select class="filter-select" id="statusFilter" onchange="loadDocuments()">
+                                <option value="">全部状态</option>
+                                <option value="completed">已完成</option>
+                                <option value="processing">处理中</option>
+                                <option value="failed">失败</option>
+                            </select>
+                            <div style="display:flex;align-items:center;">
+                                <div style="position:relative;">
+                                    <input type="text" id="searchInput" class="search-input" placeholder="搜索文档" onkeydown="if(event.key==='Enter') performDocSearch()">
+                                    <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#8892a0;font-size:14px;pointer-events:none;">🔍</span>
+                                </div>
+                                <button class="search-doc-btn" onclick="performDocSearch()" title="搜索">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                    </svg>
+                                </button>
+                            </div>
+                            <!-- 批量删除按钮 -->
+                            <button class="batch-delete-btn" id="batchDeleteBtn" onclick="confirmBatchDelete()">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                </svg>
+                                <span id="batchDeleteText">批量删除</span>
+                            </button>
+                            <!-- 上传按钮（带下拉菜单） -->
+                            <div style="position:relative;">
+                                <button class="upload-btn" id="uploadBtn" onclick="toggleUploadMenu()">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <polyline points="17 8 12 3 7 8"></polyline>
+                                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                                    </svg>
+                                    上传
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:4px;">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                </button>
+                                <div id="uploadMenu" style="display:none;position:absolute;top:calc(100% + 4px);right:0;background:white;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);min-width:160px;z-index:100;overflow:hidden;border:1px solid #e8ecf1;">
+                                    <div class="upload-menu-item" onclick="openTextDatasetModal()">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#40E0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                            <polyline points="14 2 14 8 20 8"></polyline>
+                                        </svg>
+                                        <span>创建文本数据集</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="doc-table-wrapper" id="docTableWrapper">
+                        <!-- 文档表格动态生成 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 文件详情视图（隐藏） -->
+            <div class="file-detail-view" id="fileDetailView">
+                <!-- 头部：文件名 + 操作按钮 -->
+                <div class="file-detail-header">
+                    <div class="file-detail-title">
+                        <span class="file-detail-name" id="detailFileName">-</span>
+                    </div>
+                    <div class="file-detail-actions">
+                        <button class="file-detail-btn" onclick="exportChunks()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            导出分块
+                        </button>
+                        <button class="file-detail-btn primary" onclick="gotoAdjustParams()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                            </svg>
+                            调整参数
+                        </button>
+                        <button class="file-detail-btn" onclick="reprocessChunks()" title="重新处理分片">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="23 4 23 10 17 10"></polyline>
+                                <polyline points="1 20 1 14 7 14"></polyline>
+                                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                            </svg>
+                            重新处理
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 工具栏：统计 + 搜索 -->
+                <div class="file-detail-toolbar">
+                    <div class="file-detail-count">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="8" y1="6" x2="21" y2="6"></line>
+                            <line x1="8" y1="12" x2="21" y2="12"></line>
+                            <line x1="8" y1="18" x2="21" y2="18"></line>
+                            <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                            <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                            <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                        </svg>
+                        <span id="detailChunkCount">共 <strong>0</strong> 组数据</span>
+                    </div>
+                    <div class="file-detail-search">
+                        <input type="text" id="detailSearchInput" placeholder="搜索相关数据" oninput="searchChunks()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- 分块内容区 -->
+                <div class="file-detail-content" id="detailContent">
+                    <div class="chunk-loading">加载中...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 确认删除模态框 -->
+    <div class="modal" id="confirmModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title">删除确认</span>
+                <button class="modal-close" onclick="hideConfirmModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage">确定要删除该文档吗？删除后不可恢复。</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="hideConfirmModal()">取消</button>
+                <button class="btn btn-danger" onclick="executeConfirmAction()">确定删除</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <!-- 文本数据集弹窗 -->
+    <div class="source-modal" id="sourceModal">
+        <div class="source-modal-content">
+            <div class="source-modal-header">
+                <div class="source-modal-title">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#40E0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 11l3 3L22 4"></path>
+                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                    </svg>
+                    选择来源
+                </div>
+                <button class="source-close" onclick="closeTextDatasetModal()">&times;</button>
+            </div>
+            <div class="source-options">
+                <div class="source-option selected" data-source="file" onclick="selectSource('file')">
+                    <div class="source-option-radio"></div>
+                    <div class="source-option-info">
+                        <span class="source-option-name">本地文件</span>
+                        <span class="source-option-desc">上传 PDF、TXT、DOCX 等格式的文件</span>
+                    </div>
+                </div>
+                <!-- <div class="source-option" data-source="url" onclick="selectSource('url')">
+                    <div class="source-option-radio"></div>
+                    <div class="source-option-info">
+                        <span class="source-option-name">网页链接</span>
+                        <span class="source-option-desc">读取静态网页内容作为数据集</span>
+                    </div>
+                </div> -->
+                <div class="source-option" data-source="text" onclick="selectSource('text')">
+                    <div class="source-option-radio"></div>
+                    <div class="source-option-info">
+                        <span class="source-option-name">自定义文本</span>
+                        <span class="source-option-desc">手动输入一段文本作为数据集</span>
+                    </div>
+                </div>
+            </div>
+            <div class="source-modal-footer">
+                <button class="btn btn-secondary" onclick="closeTextDatasetModal()">取消</button>
+                <button class="btn btn-primary" onclick="confirmTextDataset()">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const kbId = urlParams.get('kb_id') || '';
+    
+    // 读取文件夹路径
+    let folderStack = [];
+    try {
+        const folderPathParam = urlParams.get('folder_path');
+        if (folderPathParam) {
+            folderStack = JSON.parse(decodeURIComponent(folderPathParam));
+        }
+    } catch (e) {
+        console.warn('解析文件夹路径失败:', e);
+        folderStack = [];
+    }
+
+    let kbDetail = null;
+    let documents = [];
+    let confirmAction = null;
+    let currentDocSearchVal = '';
+
+    document.addEventListener('DOMContentLoaded', async function() {
+        if (!kbId) {
+            showToast('知识库ID缺失', 'error');
+            setTimeout(() => location.href = '/front/knowledge.html', 1500);
+            return;
+        }
+        await loadKbDetail();
+        await loadDocuments();
+    });
+
+    // ===== 加载 KB 详情 =====
+    async function loadKbDetail() {
+        try {
+            const res = await Auth.fetch(`/api/knowledge/kb/${kbId}/get_detail`);
+            if (!res.ok) throw new Error((await res.json()).msg || '加载失败');
+            const data = await res.json();
+            kbDetail = data;
+            renderKbDetail(data);
+        } catch (error) {
+            showToast('加载知识库详情失败：' + error.message, 'error');
+        }
+    }
+
+    function renderKbDetail(data) {
+        document.getElementById('viewName').textContent = data.name || '未命名知识库';
+        document.getElementById('viewDesc').textContent = data.desc || '暂无描述';
+        document.getElementById('viewDesc').style.color = data.desc ? '#1a1a2e' : '#9ca3af';
+        document.getElementById('viewId').textContent = data.id;
+        // 更新面包屑（使用 buildBreadcrumbHtml 构建完整路径）
+        updateBreadcrumb('kb');
+        document.getElementById('editName').value = data.name;
+        document.getElementById('editDesc').value = data.desc || '';
+
+        // 渲染协作者列表
+        renderMembers(data);
+    }
+
+    function renderMembers(data) {
+        const list = document.getElementById('memberList');
+        const members = [];
+
+        // 创建者
+        if (data.is_owner) {
+            members.push({
+                name: Auth.getUsername() || '我',
+                role: 'owner',
+                roleLabel: '所有者'
+            });
+        } else {
+            members.push({
+                name: '创建者',
+                role: 'owner',
+                roleLabel: '所有者'
+            });
+        }
+
+        // 协作者（模拟，实际应从接口获取）
+        if (data.access_level === 'collaborator') {
+            const levelMap = { 'read': '只读协作者', 'write': '读写协作者', 'admin': '管理员协作者' };
+            members.push({
+                name: Auth.getUsername() || '我',
+                role: data.access_level,
+                roleLabel: levelMap[data.access_level]
+            });
+        }
+
+        if (members.length === 0) {
+            list.innerHTML = '<div class="member-item" style="color:#9ca3af;justify-content:center;">暂无协作者</div>';
+            return;
+        }
+
+        list.innerHTML = members.map((m, i) => {
+            const colors = ['#40E0D0', '#FBBF24', '#8B5CF6', '#EC4899', '#EF4444'];
+            const color = colors[i % colors.length];
+            const badgeClass = m.role;
+            return `
+                <div class="member-item">
+                    <div class="member-avatar" style="background:${color};">${m.name.charAt(0).toUpperCase()}</div>
+                    <div class="member-info">
+                        <div class="member-name">${m.name}</div>
+                    </div>
+                    <span class="member-badge ${badgeClass}">${m.roleLabel}</span>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // ===== 编辑基本信息 =====
+    function toggleEditBasic() {
+        document.getElementById('basicView').style.display = 'none';
+        document.getElementById('basicEdit').style.display = 'block';
+    }
+    function cancelBasicEdit() {
+        document.getElementById('basicView').style.display = 'block';
+        document.getElementById('basicEdit').style.display = 'none';
+    }
+    async function saveBasicEdit() {
+        const name = document.getElementById('editName').value.trim();
+        const desc = document.getElementById('editDesc').value.trim();
+        if (!name) {
+            showToast('名称不能为空', 'error');
+            return;
+        }
+        try {
+            const res = await Auth.fetch(`/api/knowledge/kb/${kbId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, desc })
+            });
+            if (!res.ok) throw new Error((await res.json()).message || '保存失败');
+            showToast('保存成功', 'success');
+            cancelBasicEdit();
+            loadKbDetail();
+        } catch (error) {
+            showToast('保存失败：' + error.message, 'error');
+        }
+    }
+
+    // ===== 加载文档列表 =====
+    async function loadDocuments() {
+        try {
+            const statusFilter = document.getElementById('statusFilter');
+            const status = statusFilter ? statusFilter.value : '';
+            const url = status ? `/api/knowledge/kb/${kbId}/get_documents?status=${status}` : `/api/knowledge/kb/${kbId}/get_documents`;
+            const res = await Auth.fetch(url);
+            if (!res.ok) throw new Error((await res.json()).msg || '加载失败');
+            const data = await res.json();
+            // 过滤掉已删除的文档（双保险）
+            documents = (data.documents || []).filter(d => d.status !== 'deleted');
+            renderDocuments(documents);
+        } catch (error) {
+            showToast('加载文档列表失败：' + error.message, 'error');
+        }
+    }
+
+    function renderDocuments(docs) {
+        const wrapper = document.getElementById('docTableWrapper');
+        if (docs.length === 0) {
+            wrapper.innerHTML = `
+                <div class="empty-state">
+                    <div class="icon">📄</div>
+                    <h3>暂无文档</h3>
+                    <p>点击右上角「上传」添加文档</p>
+                </div>
+            `;
+            return;
+        }
+
+        const canDelete = kbDetail && (kbDetail.is_owner || kbDetail.access_level === 'admin' || kbDetail.access_level === 'write');
+
+        wrapper.innerHTML = `
+            <!-- 表头 -->
+            <div class="doc-list-header">
+                <div class="col-check">
+                    <div class="custom-check" id="docSelectAll" onclick="toggleSelectAll()"></div>
+                </div>
+                <div class="col-name">名称</div>
+                <div class="col-mode">处理模式</div>
+                <div class="col-count">数据量</div>
+                <div class="col-time">创建/更新时间</div>
+                <div class="col-status">状态</div>
+                <div class="col-enable">启用</div>
+                <div class="col-action"></div>
+            </div>
+            <!-- 文档行 -->
+            ${docs.map(doc => {
+                const iconClass = getDocIconClass(doc.file_type);
+                const statusText = getStatusText(doc.status);
+                const fileSize = formatFileSize(doc.file_size);
+                const safeName = escapeAttr(doc.file_name);
+                const docId = doc.id;
+                const enabled = doc.enabled !== undefined ? doc.enabled : true;
+                const countVal = doc.chunk_count ? doc.chunk_count + ' 条' : (doc.doc_count ? doc.doc_count + ' 条' : '-');
+                return `
+                    <div class="doc-list-item" data-doc-id="${docId}">
+                        <div class="col-check">
+                            <div class="custom-check" onclick="toggleDocSelect(this, '${docId}')"></div>
+                        </div>
+                        <div class="col-name">
+                            <div class="doc-name-cell">
+                                <div class="doc-icon ${iconClass}">${getDocIcon(doc.file_type)}</div>
+                                <div class="doc-info" style="min-width:0;">
+                                    <span class="doc-file-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;cursor:pointer;color:#40E0D0;" onclick="openFileDetail('${docId}')">${safeName}</span>
+                                    <span class="doc-file-type">${doc.file_type || 'unknown'} · ${fileSize}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-mode">分块存储</div>
+                        <div class="col-count">${countVal}</div>
+                        <div class="col-time">
+                            <div>${doc.create_time || '-'}</div>
+                            <div style="color:#9ca3af;">${doc.update_time || '-'}</div>
+                        </div>
+                        <div class="col-status"><span class="status-badge ${doc.status}">${statusText}</span></div>
+                        <div class="col-enable">
+                            <label class="enable-toggle">
+                                <input type="checkbox" ${enabled ? 'checked' : ''} onclick="toggleDocEnabled('${docId}', this.checked)">
+                                <span class="enable-toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="col-action">
+                            ${canDelete ? `
+                            <button class="doc-action-btn danger" onclick="confirmDeleteDoc('${docId}')" title="删除">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                </svg>
+                            </button>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('')}
+        `;
+    }
+
+    function toggleSelectAll() {
+        const allBox = document.getElementById('docSelectAll');
+        if (!allBox) return;
+        const willCheck = !allBox.classList.contains('checked');
+        allBox.classList.toggle('checked', willCheck);
+        document.querySelectorAll('.doc-list-item .custom-check').forEach(el => {
+            el.classList.toggle('checked', willCheck);
+        });
+        updateBatchDeleteBtn();
+    }
+
+    function toggleDocSelect(el, docId) {
+        el.classList.toggle('checked');
+        updateBatchDeleteBtn();
+    }
+
+    function getSelectedDocIds() {
+        const ids = [];
+        document.querySelectorAll('.doc-list-item').forEach(item => {
+            const check = item.querySelector('.custom-check');
+            if (check && check.classList.contains('checked')) {
+                ids.push(item.dataset.docId);
+            }
+        });
+        return ids;
+    }
+
+    function updateBatchDeleteBtn() {
+        const ids = getSelectedDocIds();
+        const btn = document.getElementById('batchDeleteBtn');
+        if (!btn) return;
+        if (ids.length > 0) {
+            btn.classList.add('show');
+            document.getElementById('batchDeleteText').textContent = `批量删除 (${ids.length})`;
+        } else {
+            btn.classList.remove('show');
+        }
+    }
+
+    function toggleDocEnabled(docId, checked) {
+        console.log('toggle doc', docId, 'enabled =', checked);
+    }
+
+    // ===== 上传下拉菜单 =====
+    function toggleUploadMenu() {
+        const menu = document.getElementById('uploadMenu');
+        menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+    }
+
+    document.addEventListener('click', function(e) {
+        const menu = document.getElementById('uploadMenu');
+        if (menu && !e.target.closest('#uploadBtn') && !e.target.closest('#uploadMenu')) {
+            menu.style.display = 'none';
+        }
+    });
+
+    function openTextDatasetModal() {
+        document.getElementById('uploadMenu').style.display = 'none';
+        document.getElementById('sourceModal').classList.add('show');
+        selectSource('file');
+    }
+
+    function closeTextDatasetModal() {
+        document.getElementById('sourceModal').classList.remove('show');
+    }
+
+    function selectSource(source) {
+        selectedSource = source;
+        document.querySelectorAll('.source-option').forEach(opt => {
+            opt.classList.toggle('selected', opt.dataset.source === source);
+        });
+    }
+
+    function confirmTextDataset() {
+        closeTextDatasetModal();
+        if (selectedSource === 'file') {
+            // 跳转到上传页面（文件上传模式）
+            location.href = `/front/upload.html?kb_id=${kbId}&source=file&v=20260802`;
+        } else if (selectedSource === 'url') {
+            showToast('网页链接功能开发中', 'success');
+        } else if (selectedSource === 'text') {
+            // 跳转到上传页面（自定义文本模式）
+            location.href = `/front/upload.html?kb_id=${kbId}&source=text&v=20260802`;
+        }
+    }
+
+    function filterDocs() {
+        if (!currentDocSearchVal) {
+            renderDocuments(documents);
+            return;
+        }
+        const filtered = documents.filter(d => (d.file_name || '').toLowerCase().includes(currentDocSearchVal));
+        renderDocuments(filtered);
+    }
+
+    function performDocSearch() {
+        currentDocSearchVal = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+        filterDocs();
+    }
+
+    function getDocIconClass(fileType) {
+        const t = (fileType || '').toLowerCase();
+        if (t === 'pdf') return 'pdf';
+        if (t === 'docx' || t === 'doc') return 'docx';
+        if (t === 'txt' || t === 'md') return 'txt';
+        if (t === 'csv' || t === 'xlsx' || t === 'xls') return 'csv';
+        if (t === 'folder') return 'folder';
+        return 'default';
+    }
+    function getDocIcon(fileType) {
+        const t = (fileType || '').toLowerCase();
+        if (t === 'pdf') return 'PDF';
+        if (t === 'docx' || t === 'doc') return 'DOC';
+        if (t === 'txt') return 'TXT';
+        if (t === 'md') return 'MD';
+        if (t === 'csv') return 'CSV';
+        if (t === 'folder') {
+            return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>';
+        }
+        return '📄';
+    }
+    function getStatusText(status) {
+        return { 'completed': '已完成', 'processing': '处理中', 'pending': '待处理', 'failed': '失败' }[status] || status || '未知';
+    }
+    function formatFileSize(bytes) {
+        if (!bytes || bytes === 0) return '0 B';
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+    }
+    function escapeAttr(str) {
+        const div = document.createElement('div');
+        div.textContent = str || '';
+        return div.innerHTML;
+    }
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str || '';
+        return div.innerHTML;
+    }
+
+    // ===== 上传 =====
+    async function handleFileUpload(event) {
+        const files = event.target.files;
+        if (!files || files.length === 0) return;
+        // 跳转到上传页面走四步流程
+        location.href = `/front/upload.html?kb_id=${kbId}&v=20260802`;
+    }
+
+    // ===== 删除 =====
+    function confirmDeleteDoc(docId) {
+        document.getElementById('confirmMessage').textContent = '确定要删除该文档吗？删除后不可恢复。';
+        confirmAction = async () => {
+            try {
+                const res = await Auth.fetch(`/api/knowledge/kb/${kbId}/document/${docId}`, { method: 'DELETE' });
+                if (!res.ok) throw new Error((await res.json()).msg || '删除失败');
+                showToast('文档已删除', 'success');
+                hideConfirmModal();
+                // 重置全选状态
+                const allBox = document.getElementById('docSelectAll');
+                if (allBox) allBox.classList.remove('checked');
+                loadDocuments();
+            } catch (error) {
+                showToast('删除失败：' + error.message, 'error');
+            }
+        };
+        document.getElementById('confirmModal').classList.add('show');
+    }
+
+    function confirmBatchDelete() {
+        const ids = getSelectedDocIds();
+        if (ids.length === 0) return;
+        document.getElementById('confirmMessage').textContent = `确定要删除选中的 ${ids.length} 个文档吗？删除后不可恢复。`;
+        confirmAction = async () => {
+            try {
+                const res = await Auth.fetch(`/api/knowledge/kb/${kbId}/documents/batch-delete`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ doc_ids: ids })
+                });
+                if (!res.ok) throw new Error((await res.json()).msg || '批量删除失败');
+                showToast(`成功删除 ${ids.length} 个文档`, 'success');
+                hideConfirmModal();
+                // 重置全选状态和批量按钮
+                const allBox = document.getElementById('docSelectAll');
+                if (allBox) allBox.classList.remove('checked');
+                const batchBtn = document.getElementById('batchDeleteBtn');
+                if (batchBtn) batchBtn.classList.remove('show');
+                loadDocuments();
+            } catch (error) {
+                showToast('批量删除失败：' + error.message, 'error');
+            }
+        };
+        document.getElementById('confirmModal').classList.add('show');
+    }
+    function hideConfirmModal() {
+        document.getElementById('confirmModal').classList.remove('show');
+        confirmAction = null;
+    }
+    function executeConfirmAction() { if (confirmAction) confirmAction(); }
+
+    // ===== Toast =====
+    function showToast(message, type = 'success') {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.className = `toast ${type} show`;
+        setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('modal')) e.target.classList.remove('show');
+    });
+
+    // ===== 面包屑状态管理 =====
+    let breadcrumbLevel = 'kb'; // 'kb' | 'file'
+
+    function handleBack() {
+        if (breadcrumbLevel === 'file') {
+            closeFileDetail();
+        } else {
+            // 返回上一级：弹出最后一级文件夹
+            if (folderStack.length > 0) {
+                folderStack.pop();
+            }
+            if (folderStack.length > 0) {
+                // 还有上级文件夹，返回到该文件夹
+                const prevFolderPath = encodeURIComponent(JSON.stringify(folderStack));
+                location.href = `/front/knowledge.html?folder_path=${prevFolderPath}`;
+            } else {
+                // 已到根目录
+                location.href = '/front/knowledge.html';
+            }
+        }
+    }
+
+    // 构建带文件夹路径的面包屑 HTML
+    function buildBreadcrumbHtml(level, fileName = '') {
+        let html = '';
+        let currentPath = '';
+        
+        // "我的知识库" 始终在最前面
+        if (folderStack.length > 0) {
+            // 有文件夹层级，点击返回到根目录
+            html += `<span class="breadcrumb-item" onclick="navigateToKnowledgeRoot()">我的知识库</span>`;
+        } else {
+            html += `<span class="breadcrumb-item" onclick="location.href='/front/knowledge.html'">我的知识库</span>`;
+        }
+        
+        // 添加文件夹路径
+        if (folderStack.length > 0) {
+            folderStack.forEach((folder, index) => {
+                html += `<span class="breadcrumb-sep">/</span>`;
+                if (index < folderStack.length - 1) {
+                    // 中间层级
+                    const folderPath = encodeURIComponent(JSON.stringify(folderStack.slice(0, index + 1)));
+                    html += `<span class="breadcrumb-item" onclick="navigateToFolder('${folderPath}')">${escapeHtml(folder.name)}</span>`;
+                } else {
+                    // 最后一个文件夹
+                    html += `<span class="breadcrumb-item" onclick="handleBackToFolder('${folder.id}')">${escapeHtml(folder.name)}</span>`;
+                }
+            });
+        }
+        
+        // 添加 KB 名称
+        html += `<span class="breadcrumb-sep">/</span>`;
+        if (level === 'file' && fileName) {
+            html += `<span class="breadcrumb-item" onclick="closeFileDetail()" id="breadcrumbKbName">${escapeHtml(kbDetail?.name || '知识库')}</span>`;
+            html += `<span class="breadcrumb-sep">/</span>`;
+            html += `<span class="breadcrumb-current">${escapeHtml(fileName)}</span>`;
+        } else {
+            html += `<span class="breadcrumb-current">${escapeHtml(kbDetail?.name || '加载中...')}</span>`;
+        }
+        
+        return html;
+    }
+
+    // 导航辅助函数
+    function navigateToKnowledgeRoot() {
+        location.href = '/front/knowledge.html';
+    }
+
+    function navigateToFolder(folderPathStr) {
+        try {
+            const folderPath = decodeURIComponent(folderPathStr);
+            const stack = JSON.parse(folderPath);
+            if (stack.length > 0) {
+                // 返回到指定文件夹
+                // 先跳转到 knowledge.html，带上 folder_path 参数
+                const encodedPath = encodeURIComponent(JSON.stringify(stack));
+                location.href = `/front/knowledge.html?folder_path=${encodedPath}`;
+            } else {
+                location.href = '/front/knowledge.html';
+            }
+        } catch (e) {
+            location.href = '/front/knowledge.html';
+        }
+    }
+
+    function handleBackToFolder(folderId) {
+        // 返回到指定文件夹
+        // 需要找到文件夹对应的路径
+        if (folderStack.length > 0) {
+            const encodedPath = encodeURIComponent(JSON.stringify(folderStack));
+            location.href = `/front/knowledge.html?folder_path=${encodedPath}`;
+        } else {
+            location.href = '/front/knowledge.html';
+        }
+    }
+
+    function updateBreadcrumb(level, fileName = '') {
+        const breadcrumb = document.getElementById('breadcrumb');
+        breadcrumb.innerHTML = buildBreadcrumbHtml(level, fileName);
+        breadcrumbLevel = level;
+    }
+
+    // ===== 文件详情视图 =====
+    let currentDetailDoc = null;
+    let currentDetailChunks = [];
+    let chunkExpandedMap = {};
+
+    function openFileDetail(docId) {
+        const doc = documents.find(d => d.id === docId);
+        if (!doc) {
+            showToast('文件不存在', 'error');
+            return;
+        }
+
+        currentDetailDoc = doc;
+        chunkExpandedMap = {};
+
+        // 显示详情视图，隐藏内容区
+        document.querySelector('.content-area').classList.add('hidden');
+        document.getElementById('fileDetailView').classList.add('show');
+
+        // 更新面包屑
+        updateBreadcrumb('file', doc.file_name || '未知文件');
+
+        // 设置文件名
+        document.getElementById('detailFileName').textContent = doc.file_name || '未知文件';
+
+        // 加载分块数据
+        loadChunks(docId);
+    }
+
+    function closeFileDetail() {
+        // 隐藏详情视图，显示内容区
+        document.querySelector('.content-area').classList.remove('hidden');
+        document.getElementById('fileDetailView').classList.remove('show');
+
+        // 恢复面包屑
+        updateBreadcrumb('kb');
+
+        // 清理状态
+        currentDetailDoc = null;
+        currentDetailChunks = [];
+        chunkExpandedMap = {};
+        document.getElementById('detailSearchInput').value = '';
+    }
+
+    async function loadChunks(docId) {
+        const content = document.getElementById('detailContent');
+        content.innerHTML = '<div class="chunk-loading">加载分块数据...</div>';
+
+        try {
+            const res = await Auth.fetch(`/api/knowledge/kb/${kbId}/documents/${docId}/chunks`);
+            if (!res.ok) throw new Error((await res.json()).msg || '加载失败');
+            const data = await res.json();
+            currentDetailChunks = data.chunks || [];
+            
+            // 检查分片数量是否有变化
+            const dbCount = data.db_chunk_count || 0;
+            const actualCount = data.chunk_count || 0;
+            if (currentDetailDoc && dbCount !== actualCount) {
+                // 更新当前文档的分片数量
+                currentDetailDoc.chunk_count = actualCount;
+                // 更新文档列表中的显示
+                const docIndex = documents.findIndex(d => d.id === docId);
+                if (docIndex !== -1) {
+                    documents[docIndex].chunk_count = actualCount;
+                    // 重新渲染文档列表
+                    renderDocuments();
+                }
+            }
+            
+            renderChunks(currentDetailChunks);
+        } catch (error) {
+            console.error('加载分块数据失败:', error);
+            // 使用模拟数据（如果后端接口不存在）
+            loadMockChunks(docId);
+        }
+    }
+
+    function loadMockChunks(docId) {
+        const doc = documents.find(d => d.id === docId);
+        if (!doc) return;
+
+        const count = doc.chunk_count || doc.doc_count || 10;
+        const mockChunks = [];
+        for (let i = 0; i < Math.min(count, 20); i++) {
+            mockChunks.push({
+                id: `chunk_${docId}_${i}`,
+                index: i,
+                content: `这是第 ${i} 个分块的内容。文档《${doc.file_name}》的分块数据展示。实际内容需要通过后端接口获取。这里显示的是占位内容，用于预览界面效果。`,
+                length: 100 + Math.floor(Math.random() * 400)
+            });
+        }
+        currentDetailChunks = mockChunks;
+        renderChunks(mockChunks);
+    }
+
+    function renderChunks(chunks, keyword = '') {
+        const content = document.getElementById('detailContent');
+        const countEl = document.getElementById('detailChunkCount');
+
+        if (!chunks || chunks.length === 0) {
+            content.innerHTML = `
+                <div class="chunk-empty">
+                    <div class="icon">📋</div>
+                    <h3>暂无分块数据</h3>
+                    <p>该文件尚未进行分块处理</p>
+                </div>
+            `;
+            countEl.innerHTML = '共 <strong>0</strong> 组数据';
+            return;
+        }
+
+        // 过滤搜索结果
+        let filteredChunks = chunks;
+        if (keyword) {
+            filteredChunks = chunks.filter(c => 
+                c.content.toLowerCase().includes(keyword.toLowerCase())
+            );
+        }
+
+        countEl.innerHTML = `共 <strong>${chunks.length}</strong> 组数据${keyword ? `，找到 <strong>${filteredChunks.length}</strong> 条匹配` : ''}`;
+
+        if (filteredChunks.length === 0) {
+            content.innerHTML = `
+                <div class="chunk-empty">
+                    <div class="icon">🔍</div>
+                    <h3>未找到匹配结果</h3>
+                    <p>没有包含 "${keyword}" 的分块</p>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '<div class="chunk-list">';
+        filteredChunks.forEach((chunk, idx) => {
+            const chunkId = chunk.id || `chunk_${chunk.index}_${idx}`;
+            const isExpanded = chunkExpandedMap[chunkId] || false;
+            const contentLen = chunk.length || chunk.content?.length || 0;
+            const displayContent = escapeHtml(chunk.content || '');
+            const sheetName = chunk.metadata && chunk.metadata.sheet_name ? chunk.metadata.sheet_name : '';
+            const sheetLabel = sheetName ? `<span class="chunk-sheet-label">来源: ${escapeHtml(sheetName)}</span>` : '';
+
+            html += `
+                <div class="chunk-item" id="chunk-item-${chunkId}">
+                    <div class="chunk-header">
+                        <div class="chunk-header-left">
+                            <div class="chunk-index">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                </svg>
+                                #${idx}
+                            </div>
+                            ${sheetLabel}
+                        </div>
+                        <div class="chunk-length">${contentLen} 字符</div>
+                    </div>
+                    <div class="chunk-content ${isExpanded ? 'expanded' : ''}" id="chunk-content-${chunkId}" style="${isExpanded ? '' : 'max-height:none;overflow:visible;'}">
+                        ${displayContent}
+                    </div>
+                    <button class="chunk-toggle ${isExpanded ? 'expanded' : ''}" id="chunk-toggle-${chunkId}" style="display:none;" onclick="toggleChunk('${chunkId}')">
+                        ${isExpanded ? '收起' : '展开查看'}
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </button>
+                </div>
+            `;
+        });
+        html += '</div>';
+        content.innerHTML = html;
+
+        // 检测内容是否超出，决定是否显示展开按钮
+        requestAnimationFrame(() => {
+            filteredChunks.forEach((chunk, idx) => {
+                const chunkId = chunk.id || `chunk_${chunk.index}_${idx}`;
+                const contentEl = document.getElementById(`chunk-content-${chunkId}`);
+                const toggleBtn = document.getElementById(`chunk-toggle-${chunkId}`);
+                if (!contentEl || !toggleBtn) return;
+
+                const isExpanded = chunkExpandedMap[chunkId] || false;
+                const contentHeight = contentEl.scrollHeight;
+                const maxHeight = 100; // 与CSS中的max-height一致
+
+                if (isExpanded) {
+                    // 已展开状态
+                    contentEl.classList.add('expanded');
+                    contentEl.style.maxHeight = 'none';
+                    contentEl.style.overflow = 'visible';
+                    contentEl.classList.remove('collapsed');
+                    toggleBtn.style.display = 'flex';
+                    toggleBtn.classList.add('expanded');
+                    toggleBtn.innerHTML = '收起 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+                } else if (contentHeight > maxHeight) {
+                    // 内容超出，显示收起状态和展开按钮
+                    contentEl.classList.add('collapsed');
+                    contentEl.style.maxHeight = '';
+                    contentEl.style.overflow = '';
+                    contentEl.classList.remove('expanded');
+                    toggleBtn.style.display = 'flex';
+                    toggleBtn.classList.remove('expanded');
+                    toggleBtn.innerHTML = '展开查看 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+                } else {
+                    // 内容未超出，保持完整显示，不显示展开按钮
+                    contentEl.classList.remove('collapsed');
+                    contentEl.classList.remove('expanded');
+                    contentEl.style.maxHeight = 'none';
+                    contentEl.style.overflow = 'visible';
+                    toggleBtn.style.display = 'none';
+                }
+            });
+        });
+    }
+
+    function toggleChunk(chunkId) {
+        chunkExpandedMap[chunkId] = !chunkExpandedMap[chunkId];
+        const contentEl = document.getElementById(`chunk-content-${chunkId}`);
+        const btn = document.getElementById(`chunk-toggle-${chunkId}`);
+        if (!contentEl || !btn) return;
+
+        const isExpanded = chunkExpandedMap[chunkId];
+        if (isExpanded) {
+            // 展开
+            contentEl.classList.remove('collapsed');
+            contentEl.classList.add('expanded');
+            contentEl.style.maxHeight = 'none';
+            contentEl.style.overflow = 'visible';
+            btn.classList.add('expanded');
+            btn.innerHTML = '收起 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+        } else {
+            // 收起
+            contentEl.classList.remove('expanded');
+            contentEl.classList.add('collapsed');
+            contentEl.style.maxHeight = '';
+            contentEl.style.overflow = '';
+            btn.classList.remove('expanded');
+            btn.innerHTML = '展开查看 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+        }
+    }
+
+    function searchChunks() {
+        const keyword = document.getElementById('detailSearchInput').value.trim();
+        renderChunks(currentDetailChunks, keyword);
+    }
+
+    function gotoAdjustParams() {
+        if (!currentDetailDoc) {
+            showToast('请先选择一个文档', 'error');
+            return;
+        }
+        const docId = currentDetailDoc.id;
+        location.href = `/front/adjust_params.html?kb_id=${kbId}&doc_id=${docId}&v=20260802`;
+    }
+
+    function exportChunks() {
+        if (!currentDetailChunks || currentDetailChunks.length === 0) {
+            showToast('暂无分块数据可导出', 'error');
+            return;
+        }
+
+        const docName = currentDetailDoc?.file_name || '分块数据';
+        let exportText = `# ${docName} 分块数据\n\n`;
+        currentDetailChunks.forEach((chunk, idx) => {
+            exportText += `## 分块 #${idx}\n`;
+            exportText += `${chunk.content || ''}\n\n`;
+        });
+
+        // 创建下载
+        const blob = new Blob([exportText], { type: 'text/markdown;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${docName}_分块数据.md`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        showToast('导出成功', 'success');
+    }
+
+    async function reprocessChunks() {
+        if (!currentDetailDoc) {
+            showToast('文件信息缺失', 'error');
+            return;
+        }
+
+        if (!confirm(`确定要重新处理文件「${currentDetailDoc.file_name}」的分片吗？\n这将重新解析和分块该文件，并覆盖现有的分片数据。`)) {
+            return;
+        }
+
+        showToast('正在重新处理分片...', 'info');
+
+        try {
+            const res = await Auth.fetch(`/api/knowledge/kb/${kbId}/documents/${currentDetailDoc.id}/reprocess`, {
+                method: 'POST'
+            });
+            if (!res.ok) throw new Error((await res.json()).msg || '重新处理失败');
+            const data = await res.json();
+            
+            // 重新加载分片数据
+            loadChunks(currentDetailDoc.id);
+            // 更新文档列表中的分片数量
+            await loadDocuments();
+            
+            showToast(`重新处理成功，共生成 ${data.chunk_count} 个分片`, 'success');
+        } catch (error) {
+            console.error('重新处理分片失败:', error);
+            showToast('重新处理失败：' + error.message, 'error');
+        }
+    }
+    </script>
+</body>
+</html>

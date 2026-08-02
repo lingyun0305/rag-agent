@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工作台 - AI对话助手</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            background: #f0f2f5;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+            width: 100%;
+        }
+
+        /* ===== 侧边栏 ===== */
+        .sidebar {
+            width: 64px;
+            background: #1a1d29;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 16px 0;
+            flex-shrink: 0;
+        }
+
+        .sidebar-logo {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            margin-bottom: 24px;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+            align-items: center;
+        }
+
+        .sidebar-item {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #8892a0;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .sidebar-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #ffffff;
+        }
+
+        .sidebar-item.active {
+            background: rgba(64, 224, 208, 0.2);
+            color: #40E0D0;
+        }
+
+        .sidebar-item svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .sidebar-item .tooltip {
+            position: absolute;
+            left: 56px;
+            background: #2d3748;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            z-index: 100;
+        }
+
+        .sidebar-item:hover .tooltip {
+            opacity: 1;
+        }
+
+        .sidebar-bottom {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+            align-items: center;
+        }
+
+        .sidebar-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* ===== 工作台子导航 ===== */
+        .workbench-nav {
+            width: 220px;
+            background: #ffffff;
+            border-right: 1px solid #e8ecf1;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .workbench-nav-header {
+            padding: 20px;
+            border-bottom: 1px solid #e8ecf1;
+        }
+
+        .workbench-nav-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a1a2e;
+        }
+
+        .workbench-nav-list {
+            flex: 1;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .workbench-nav-item {
+            padding: 12px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            color: #4b5563;
+            transition: all 0.2s;
+        }
+
+        .workbench-nav-item:hover {
+            background: #f5f6f7;
+        }
+
+        .workbench-nav-item.active {
+            background: rgba(64, 224, 208, 0.1);
+            color: #40E0D0;
+        }
+
+        .workbench-nav-item svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* ===== 主内容区域 ===== */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: #f8f9fa;
+        }
+
+        .page-header {
+            padding: 20px 24px;
+            background: #ffffff;
+            border-bottom: 1px solid #e8ecf1;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .page-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a2e;
+        }
+
+        .page-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .search-input-wrapper {
+            position: relative;
+            width: 260px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 9px 14px 9px 36px;
+            border: 1px solid #e8ecf1;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #2d3748;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .search-input:focus {
+            border-color: #40E0D0;
+            box-shadow: 0 0 0 3px rgba(64, 224, 208, 0.1);
+        }
+
+        .search-input::placeholder {
+            color: #9ca3af;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #8892a0;
+            font-size: 14px;
+        }
+
+        .btn {
+            padding: 9px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(64, 224, 208, 0.3);
+        }
+
+        .btn-secondary {
+            background: #ffffff;
+            color: #4b5563;
+            border: 1px solid #e8ecf1;
+        }
+
+        .btn-secondary:hover {
+            background: #f5f6f7;
+            border-color: #d1d5db;
+        }
+
+        /* ===== Tab 页面 ===== */
+        .tab-page {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .tab-page.active {
+            display: flex;
+        }
+
+        /* ===== 页面内容 ===== */
+        .page-content {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+        }
+
+        .page-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .page-content::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 3px;
+        }
+
+        /* ===== 空状态 ===== */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            padding: 80px 20px;
+            color: #999;
+            z-index: 10;
+            position: relative;
+            pointer-events: auto;
+        }
+
+        .empty-state .icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            color: #ddd;
+        }
+
+        .empty-state h3 {
+            font-size: 18px;
+            font-weight: 500;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+            color: #999;
+            margin-bottom: 24px;
+        }
+
+        /* ===== 工具卡片网格 ===== */
+        .tool-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+            gap: 16px;
+        }
+
+        .tool-card {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #e8ecf1;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            position: relative;
+        }
+
+        .tool-card:hover {
+            border-color: #40E0D0;
+            box-shadow: 0 2px 12px rgba(64, 224, 208, 0.15);
+        }
+
+        /* 卡片头部：图标 + 名称 + 标签 */
+        .tool-card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .tool-card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+            color: white;
+        }
+
+        .tool-card-title-wrap {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .tool-card-name {
+            font-size: 16px;
+            font-weight: 500;
+            color: #1a1a2e;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .tool-card-tag {
+            padding: 4px 10px;
+            background: #f1f5f9;
+            border-radius: 12px;
+            font-size: 12px;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+
+        /* 卡片描述 */
+        .tool-card-desc {
+            font-size: 14px;
+            color: #8892a0;
+            line-height: 1.5;
+            min-height: 42px;
+        }
+
+        /* 卡片底部：元信息 */
+        .tool-card-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 4px;
+        }
+
+        .tool-card-meta {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        .tool-card-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* ===== Toast 提示 ===== */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 14px 22px;
+            border-radius: 10px;
+            color: white;
+            font-size: 14px;
+            z-index: 2000;
+            animation: slideIn 0.3s;
+            display: none;
+        }
+
+        .toast.show {
+            display: block;
+        }
+
+        .toast.success {
+            background: #2ed573;
+        }
+
+        .toast.error {
+            background: #ff4757;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(100%); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+    </style>
+    <script src="/front/js/auth.js?v=20260801"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 侧边栏 -->
+        <div class="sidebar">
+            <div class="sidebar-logo">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="10" rx="2"></rect>
+                    <circle cx="12" cy="5" r="2"></circle>
+                    <path d="M12 7v4"></path>
+                </svg>
+            </div>
+            <div class="sidebar-nav">
+                <div class="sidebar-item" onclick="location.href='/front/'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    <span class="tooltip">对话</span>
+                </div>
+                <div class="sidebar-item" onclick="location.href='/front/knowledge.html'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                    </svg>
+                    <span class="tooltip">知识库</span>
+                </div>
+                <div class="sidebar-item active" onclick="location.href='/front/workbench.html'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>
+                    <span class="tooltip">工作台</span>
+                </div>
+                <div class="sidebar-item" onclick="location.href='/front/account.html'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <span class="tooltip">账号</span>
+                </div>
+            </div>
+            <div class="sidebar-bottom">
+                <div class="sidebar-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
+                    <span class="tooltip">帮助</span>
+                </div>
+                <div class="sidebar-avatar" onclick="location.href='/front/account.html'">U</div>
+            </div>
+        </div>
+
+        <!-- 工作台子导航 -->
+        <div class="workbench-nav">
+            <div class="workbench-nav-header">
+                <div class="workbench-nav-title">工作台</div>
+            </div>
+            <div class="workbench-nav-list">
+                <div class="workbench-nav-item active" onclick="switchTab('my-tools')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+                    </svg>
+                    我的工具
+                </div>
+                <div class="workbench-nav-item" onclick="switchTab('system-tools')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+                        <rect x="9" y="9" width="6" height="6"></rect>
+                        <line x1="9" y1="1" x2="9" y2="4"></line>
+                        <line x1="15" y1="1" x2="15" y2="4"></line>
+                        <line x1="9" y1="20" x2="9" y2="23"></line>
+                        <line x1="15" y1="20" x2="15" y2="23"></line>
+                        <line x1="20" y1="9" x2="23" y2="9"></line>
+                        <line x1="20" y1="14" x2="23" y2="14"></line>
+                        <line x1="1" y1="9" x2="4" y2="9"></line>
+                        <line x1="1" y1="14" x2="4" y2="14"></line>
+                    </svg>
+                    系统工具
+                </div>
+            </div>
+        </div>
+
+        <!-- 主内容区域 -->
+        <div class="main-content">
+            <!-- 我的工具 -->
+            <div class="tab-page active" id="my-tools-page">
+                <div class="page-header">
+                    <div class="page-title">我的工具</div>
+                    <div class="page-actions">
+                        <div class="search-input-wrapper">
+                            <span class="search-icon">🔍</span>
+                            <input type="text" id="myToolsSearch" class="search-input" placeholder="搜索我的工具" oninput="filterMyTools()">
+                        </div>
+                        <button class="btn btn-secondary" onclick="showToast('创建文件夹功能开发中', 'success')">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                            </svg>
+                            创建文件夹
+                        </button>
+                        <button class="btn btn-primary" onclick="showToast('导入功能开发中', 'success')">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                            导入
+                        </button>
+                    </div>
+                </div>
+                <div class="page-content">
+                    <div class="empty-state" id="my-tools-empty">
+                        <div class="icon">🧰</div>
+                        <h3>创建你的第一个工具</h3>
+                        <p>通过导入或自定义创建属于自己的工具</p>
+                        <button class="btn btn-primary" onclick="showToast('创建工具功能开发中', 'success')">创建工具</button>
+                    </div>
+                    <div class="tool-grid" id="my-tools-list"></div>
+                </div>
+            </div>
+
+            <!-- 系统工具 -->
+            <div class="tab-page" id="system-tools-page">
+                <div class="page-header">
+                    <div class="page-title">系统工具</div>
+                    <div class="page-actions">
+                        <div class="search-input-wrapper">
+                            <span class="search-icon">🔍</span>
+                            <input type="text" id="systemToolsSearch" class="search-input" placeholder="搜索系统工具" oninput="filterSystemTools()">
+                        </div>
+                    </div>
+                </div>
+                <div class="page-content">
+                    <div class="empty-state" id="system-tools-empty">
+                        <div class="icon">📭</div>
+                        <h3>暂无系统工具</h3>
+                        <p>系统工具列表为空</p>
+                    </div>
+                    <div class="tool-grid" id="system-tools-grid"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast 提示 -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // 模拟数据
+        let myTools = [];
+        const systemTools = [
+            { name: '计算器', desc: '执行数学计算表达式', icon: '🧮', tag: '数学' },
+            { name: '文件读取', desc: '读取本地文件内容', icon: '📄', tag: '文件' },
+            { name: '网页搜索', desc: '搜索互联网上的信息', icon: '🔍', tag: '网络' },
+            { name: '代码执行', desc: '执行 Python 等代码片段', icon: '💻', tag: '开发' },
+            { name: '翻译', desc: '多语言文本翻译', icon: '🌐', tag: '文本' },
+            { name: '天气查询', desc: '查询指定城市天气', icon: '🌤️', tag: '生活' }
+        ];
+
+        function switchTab(tab) {
+            document.querySelectorAll('.workbench-nav-item').forEach(item => item.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+
+            document.querySelectorAll('.tab-page').forEach(page => page.classList.remove('active'));
+            document.getElementById(tab + '-page').classList.add('active');
+        }
+
+        function renderMyTools(tools) {
+            const list = document.getElementById('my-tools-list');
+            const empty = document.getElementById('my-tools-empty');
+
+            if (tools.length === 0) {
+                list.style.display = 'none';
+                empty.style.display = 'flex';
+                return;
+            }
+
+            empty.style.display = 'none';
+            list.style.display = 'grid';
+            list.innerHTML = tools.map(tool => `
+                <div class="tool-card">
+                    <div class="tool-card-header">
+                        <div class="tool-card-icon">${tool.icon}</div>
+                        <div class="tool-card-title-wrap">
+                            <div class="tool-card-name">${tool.name}</div>
+                            <div class="tool-card-tag">${tool.tag}</div>
+                        </div>
+                    </div>
+                    <div class="tool-card-desc">${tool.desc}</div>
+                    <div class="tool-card-footer">
+                        <div class="tool-card-meta">
+                            <div class="tool-card-meta-item">
+                                <span>👤</span>
+                                <span>我的工具</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderSystemTools(tools) {
+            const grid = document.getElementById('system-tools-grid');
+            const empty = document.getElementById('system-tools-empty');
+
+            if (tools.length === 0) {
+                grid.style.display = 'none';
+                empty.style.display = 'flex';
+                return;
+            }
+
+            empty.style.display = 'none';
+            grid.style.display = 'grid';
+            grid.innerHTML = tools.map(tool => `
+                <div class="tool-card">
+                    <div class="tool-card-header">
+                        <div class="tool-card-icon">${tool.icon}</div>
+                        <div class="tool-card-title-wrap">
+                            <div class="tool-card-name">${tool.name}</div>
+                            <div class="tool-card-tag">${tool.tag}</div>
+                        </div>
+                    </div>
+                    <div class="tool-card-desc">${tool.desc}</div>
+                    <div class="tool-card-footer">
+                        <div class="tool-card-meta">
+                            <div class="tool-card-meta-item">
+                                <span>⚙️</span>
+                                <span>系统工具</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterMyTools() {
+            const keyword = document.getElementById('myToolsSearch').value.trim().toLowerCase();
+            const filtered = myTools.filter(tool =>
+                tool.name.toLowerCase().includes(keyword) ||
+                tool.desc.toLowerCase().includes(keyword)
+            );
+            renderMyTools(filtered);
+        }
+
+        function filterSystemTools() {
+            const keyword = document.getElementById('systemToolsSearch').value.trim().toLowerCase();
+            const filtered = systemTools.filter(tool =>
+                tool.name.toLowerCase().includes(keyword) ||
+                tool.desc.toLowerCase().includes(keyword)
+            );
+            renderSystemTools(filtered);
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // 初始化
+        renderMyTools(myTools);
+        renderSystemTools(systemTools);
+    </script>
+</body>
+</html>

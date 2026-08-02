@@ -2,8 +2,9 @@
 from typing import Optional,List,Dict
 from langchain_core.documents import Document
 
-from backend.app.utils.models_factory import modelFactory
+from backend.app.utils.models_factory import model_factory
 from backend.app.utils.vector_store import get_vector_store
+from backend.app.core.config import settings
 
 class HyDEService:
     """
@@ -16,10 +17,12 @@ class HyDEService:
     def __init__(
         self,
         collection_name:str,
-        llm_provider:str = "qwen",
+        llm_provider:str = None,
         temperature:float = 0.7
     ):
-        self.llm = modelFactory.get_llm_model(provider=llm_provider,temperature=temperature)
+        if llm_provider is None:
+            llm_provider = settings.DEFAULT_LLM_PROVIDER
+        self.llm = model_factory.get_llm_model(provider=llm_provider,temperature=temperature)
         self.vector_store = get_vector_store(collection_name=collection_name)
 
     # ====== 提示词构建 ======
@@ -116,5 +119,19 @@ class HyDEService:
         )
         return results
 
-# ====== 全局实例 ======
-hyde_service = HyDEService()
+# ====== 全局实例（延迟初始化）======
+_hyde_service_instance = None
+
+def get_hyde_service(llm_provider: str = None):
+    global _hyde_service_instance
+    if _hyde_service_instance is None:
+        _hyde_service_instance = HyDEService(settings.CHROMA_COLLECTION_NAME, llm_provider=llm_provider)
+    elif llm_provider is not None and _hyde_service_instance.llm_provider != llm_provider:
+        _hyde_service_instance = HyDEService(settings.CHROMA_COLLECTION_NAME, llm_provider=llm_provider)
+    return _hyde_service_instance
+
+class _HyDEServiceProxy:
+    def __getattr__(self, name):
+        return getattr(get_hyde_service(), name)
+
+hyde_service = _HyDEServiceProxy()

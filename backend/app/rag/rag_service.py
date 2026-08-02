@@ -3,8 +3,9 @@ from typing import List,Dict,Optional
 from langchain_core.documents import Document
 from langchain_core.messages import SystemMessage,AIMessage,HumanMessage
 
-from backend.app.utils.models_factory import modelFactory
+from backend.app.utils.models_factory import model_factory
 from backend.app.rag.retriever_service import retriever_service
+from backend.app.core.config import settings
 
 class RAGService:
     """
@@ -12,13 +13,20 @@ class RAGService:
     """
     def __init__(
         self,
-        llm_provider:str = "qwen",
+        llm_provider:str = None,
         temperture:float = 0.7,
     ):
-        self.llm = modelFactory.get_llm_model(provider=llm_provider,temperature=temperture)
+        if llm_provider is None:
+            llm_provider = settings.DEFAULT_LLM_PROVIDER
+        self.llm_provider = llm_provider
+        self.temperature = temperture
         self.retriever = retriever_service
+
+    def _get_llm(self, llm_provider: Optional[str] = None):
+        provider = llm_provider or self.llm_provider
+        return model_factory.get_llm_model(provider=provider, temperature=self.temperature)
     
-    def chat(
+    async def chat(
         self,
         query:str,
         collection_name:str = "default_collection",
@@ -26,6 +34,7 @@ class RAGService:
         strategy:str = "hybrid",
         use_rerank:bool = True,
         filter_dict:Optional[Dict]=None,
+        llm_provider: Optional[str] = None,
     )->Dict[str,any]:
         """
         RAG问答主入口
@@ -36,27 +45,29 @@ class RAGService:
             strategy: 检索策略 vector/bm25/hybrid/hyde
             use_rerank: 是否启用Rerank
         Returns:
-            {"answer": str, "sources": list, "strategy": str}
+            {"answer": str, "sources": list, "strategy": str, "usage_metadata": dict}
         """
-        # 检索相关文档
-        docs = self.retriever.retrieve(
+        docs = await self.retriever.retrieve(
             query=query,
-            collect_name=collection_name,
+            collection_name=collection_name,
             strategy=strategy,
             use_rerank=use_rerank,
             filter_dict=filter_dict
         )
         # 组合prompt
         prompt = self.build_prompt(query,docs,history)
-        # llm 生成答案
-        response = self.llm.invoke(prompt)
+        llm = self._get_llm(llm_provider)
+        response = llm.invoke(prompt)
         # 提取来源信息
         sources = self._extract_sources(docs)
+        # 提取token使用信息
+        usage_metadata = getattr(response, "usage_metadata", None)
         return {
             "answer":response,
             "sources":sources,
             "strategy":strategy,
             "collection_name":collection_name,
+            "usage_metadata": usage_metadata,
         }
 
     # ====== Prompt 构建 ======
@@ -108,6 +119,12 @@ class RAGService:
 2. 如果资料中没有相关信息，请明确告知用户
 3. 回答要简洁准确，引用具体内容
 4. 在回答末尾标注引用来源，格式：[来源: 文件名]
+5. 使用规范的 Markdown 格式输出：
+   - 使用 ## 或 ### 作为段落标题，标题前后空一行
+   - 使用 - 或 1. 2. 3. 表示列表
+   - 重点内容用 **加粗** 标注
+   - 段落之间空一行
+   - 代码使用```代码块```包裹
 """
 
     def format_content(
@@ -167,7 +184,7 @@ class RAGService:
             provider: 模型提供商 "qwen" 或 "doubao"
             temperature: 温度参数
         """
-        self.llm = modelFactory.switch_llm(provider=provider,temperature=temperture)
+        self.llm = model_factory.switch_llm(provider=provider,temperature=temperture)
     
     # ====== 流式输出 ======
 
@@ -178,6 +195,8 @@ class RAGService:
         history:Optional[List[Dict]]=None,
         strategy:str = "hybrid",
         use_rerank:bool = True,
+        llm_provider: Optional[str] = None,
+        usage_collector: Optional[Dict] = None,
     ):
         """
         流式RAG问答
@@ -185,41 +204,54 @@ class RAGService:
             query: 用户问题
             history: 对话历史
             strategy: 检索策略
+            usage_collector: 用于收集token使用信息的字典（传引用，内部会填充）
         Yields:
             字符串chunk
         """
-        # 检索
-        docs = self.retriever.retrieve(
+        docs = await self.retriever.retrieve(
             query=query,
-            collect_name=collection_name,
+            collection_name=collection_name,
             strategy=strategy,
             use_rerank=use_rerank
         ) 
+
+        if not docs:
+            messages = []
+            if history:
+                for msg in history:
+                    if msg["role"] == "user":
+                        messages.append(HumanMessage(content=msg["content"]))
+                    elif msg["role"] == "assistant":
+                        messages.append(AIMessage(content=msg["content"]))
+            messages.append(HumanMessage(content=query))
+            llm = self._get_llm(llm_provider)
+            async for chunk in llm.astream(messages):
+                if usage_collector is not None and hasattr(chunk, "usage_metadata") and chunk.usage_metadata:
+                    usage_collector["usage"] = chunk.usage_metadata
+                yield chunk.content
+            return
+
         prompt = self.build_prompt(query=query,docs=docs,history=history)
-        # 流式生成 
-        async for chunk in self.llm.astream(prompt):
+        llm = self._get_llm(llm_provider)
+        async for chunk in llm.astream(prompt):
+            if usage_collector is not None and hasattr(chunk, "usage_metadata") and chunk.usage_metadata:
+                usage_collector["usage"] = chunk.usage_metadata
             yield chunk.content
 
-    # ====== 简单问答 ======
+# ====== 全局实例（延迟初始化）======
 
-    def direct_chat(self,query:str)->str:
-        """
-        直接对话（不走RAG检索）
-        用于闲聊或不需要知识库的场景
-        """
-        response = self.llm.invoke(query)
-        return response.content
+_rag_service_instance = None
 
-    # def add_citations(
-    #     self,
-    # ):
-    #     pass
+def get_rag_service(llm_provider: str = None):
+    global _rag_service_instance
+    if _rag_service_instance is None:
+        _rag_service_instance = RAGService(llm_provider=llm_provider)
+    elif llm_provider is not None and _rag_service_instance.llm_provider != llm_provider:
+        _rag_service_instance = RAGService(llm_provider=llm_provider)
+    return _rag_service_instance
 
-    # def get_chat_history(
-    #     self,
-    # ):
-    #     pass
+class _RAGServiceProxy:
+    def __getattr__(self, name):
+        return getattr(get_rag_service(), name)
 
-# ====== 全局实例 ======
-
-rag_service = RAGService()
+rag_service = _RAGServiceProxy()

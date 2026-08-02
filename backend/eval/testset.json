@@ -1,0 +1,606 @@
+{
+    "version": "1.0",
+    "created_at": "2026-07-09",
+    "description": "企业研发辅助智能体评测用例集",
+    "categories": [
+        "knowledge_query",
+        "calculation",
+        "file_read",
+        "mixed",
+        "long_dialog",
+        "fuzzy_query",
+        "no_answer",
+        "hallucination",
+        "tool_call"
+    ],
+    "test_cases": [
+        {
+            "id": "kq_001",
+            "type": "knowledge_query",
+            "category": "人事政策",
+            "query": "公司的请假流程是什么？",
+            "expect_keywords": ["OA", "审批", "流程", "请假"],
+            "must_call_tools": ["knowledge_search"],
+            "difficulty": "easy",
+            "notes": "基础人事流程查询"
+        },
+        {
+            "id": "kq_002",
+            "type": "knowledge_query",
+            "category": "人事政策",
+            "query": "年假有多少天？",
+            "expect_keywords": ["年假", "天数", "带薪"],
+            "must_call_tools": ["knowledge_search"],
+            "difficulty": "easy"
+        },
+        {
+            "id": "kq_003",
+            "type": "knowledge_query",
+            "category": "人事政策",
+            "query": "病假扣工资吗？怎么扣？",
+            "expect_keywords": ["病假", "扣款", "工资"],
+            "must_call_tools": ["knowledge_search"],
+            "difficulty": "medium"
+        },
+        {
+            "id": "kq_004",
+            "type": "knowledge_query",
+            "category": "代码规范",
+            "query": "Python代码提交规范是什么？",
+            "expect_keywords": ["Python", "commit", "规范", "代码"],
+            "must_call_tools": ["knowledge_search"],
+            "difficulty": "easy"
+        },
+        {
+            "id": "kq_005",
+            "type": "knowledge_query",
+            "category": "代码规范",
+            "query": "Git分支管理策略是什么？",
+            "expect_keywords": ["Git", "分支", "管理"],
+            "must_call_tools": ["knowledge_search"],
+            "difficulty": "medium"
+        },
+        {
+            "id": "kq_006",
+            "type": "knowledge_query",
+            "category": "代码规范",
+            "query": "如何进行代码审查？",
+            "expect_keywords": ["Code Review", "审查", "PR"],
+            "must_call_tools": ["knowledge_search"],
+            "difficulty": "medium"
+        },
+        {
+            "id": "kq_007",
+            "type": "knowledge_query",
+            "category": "技术文档",
+            "query": "API接口文档在哪里？",
+            "expect_keywords": ["API", "文档", "接口"],
+            "must_call_tools": ["knowledge_search"],
+            "difficulty": "easy"
+        },
+        {
+            "id": "kq_008",
+            "type": "knowledge_query",
+            "category": "技术文档",
+            "query": "数据库设计规范是什么？",
+            "expect_keywords": ["数据库", "设计", "规范"],
+            "must_call_tools": ["knowledge_search"],
+            "difficulty": "medium"
+        },
+        {
+            "id": "kq_009",
+            "type": "knowledge_query",
+            "category": "技术文档",
+            "query": "微服务架构设计原则是什么？",
+            "expect_keywords": ["微服务", "架构", "原则"],
+            "must_call_tools": ["knowledge_search"],
+            "difficulty": "hard"
+        },
+        {
+            "id": "kq_010",
+            "type": "knowledge_query",
+            "category": "安全规范",
+            "query": "API密钥怎么管理？",
+            "expect_keywords": ["API", "密钥", "安全"],
+            "must_call_tools": ["knowledge_search"],
+            "difficulty": "medium"
+        },
+        {
+            "id": "kq_011",
+            "type": "knowledge_query",
+            "category": "安全规范",
+            "query": "数据加密标准是什么？",
+            "expect_keywords": ["加密", "安全", "标准"],
+            "must_call_tools": ["knowledge_search"],
+            "difficulty": "medium"
+        },
+        {
+            "id": "kq_012",
+            "type": "knowledge_query",
+            "category": "运维规范",
+            "query": "服务器部署流程是什么？",
+            "expect_keywords": ["部署", "服务器", "流程"],
+            "must_call_tools": ["knowledge_search"],
+            "difficulty": "medium"
+        },
+        {
+            "id": "kq_013",
+            "type": "knowledge_query",
+            "category": "运维规范",
+            "query": "日志怎么查看？",
+            "expect_keywords": ["日志", "查看", "运维"],
+            "must_call_tools": ["knowledge_search"],
+            "difficulty": "easy"
+        },
+        {
+            "id": "kq_014",
+            "type": "knowledge_query",
+            "category": "办公流程",
+            "query": "报销流程是什么？",
+            "expect_keywords": ["报销", "流程", "财务"],
+            "must_call_tools": ["knowledge_search"],
+            "difficulty": "easy"
+        },
+        {
+            "id": "kq_015",
+            "type": "knowledge_query",
+            "category": "办公流程",
+            "query": "会议室怎么预约？",
+            "expect_keywords": ["会议室", "预约", "会议"],
+            "must_call_tools": ["knowledge_search"],
+            "difficulty": "easy"
+        },
+        {
+            "id": "calc_001",
+            "type": "calculation",
+            "category": "基础计算",
+            "query": "125乘以8等于多少？",
+            "expect_keywords": ["1000"],
+            "must_call_tools": ["calculator"],
+            "difficulty": "easy"
+        },
+        {
+            "id": "calc_002",
+            "type": "calculation",
+            "category": "基础计算",
+            "query": "(3+5)*2等于多少？",
+            "expect_keywords": ["16"],
+            "must_call_tools": ["calculator"],
+            "difficulty": "easy"
+        },
+        {
+            "id": "calc_003",
+            "type": "calculation",
+            "category": "基础计算",
+            "query": "100除以4加20等于多少？",
+            "expect_keywords": ["45"],
+            "must_call_tools": ["calculator"],
+            "difficulty": "easy"
+        },
+        {
+            "id": "calc_004",
+            "type": "calculation",
+            "category": "财务计算",
+            "query": "日薪200，请3天假扣多少钱？",
+            "expect_keywords": ["600"],
+            "must_call_tools": ["calculator"],
+            "difficulty": "easy"
+        },
+        {
+            "id": "calc_005",
+            "type": "calculation",
+            "category": "财务计算",
+            "query": "1000元报销，税率13%，税后多少？",
+            "expect_keywords": ["870"],
+            "must_call_tools": ["calculator"],
+            "difficulty": "easy"
+        },
+        {
+            "id": "calc_006",
+            "type": "calculation",
+            "category": "复杂计算",
+            "query": "2的10次方等于多少？",
+            "expect_keywords": ["1024"],
+            "must_call_tools": ["calculator"],
+            "difficulty": "easy"
+        },
+        {
+            "id": "calc_007",
+            "type": "calculation",
+            "category": "复杂计算",
+            "query": "(10+5)*2-8/4等于多少？",
+            "expect_keywords": ["28"],
+            "must_call_tools": ["calculator"],
+            "difficulty": "medium"
+        },
+        {
+            "id": "file_001",
+            "type": "file_read",
+            "category": "文档读取",
+            "query": "请读取员工手册的内容",
+            "expect_keywords": ["员工手册", "内容"],
+            "must_call_tools": ["file_reader"],
+            "difficulty": "easy"
+        },
+        {
+            "id": "file_002",
+            "type": "file_read",
+            "category": "文档读取",
+            "query": "帮我看一下项目架构文档",
+            "expect_keywords": ["架构", "文档"],
+            "must_call_tools": ["file_reader"],
+            "difficulty": "easy"
+        },
+        {
+            "id": "mix_001",
+            "type": "mixed",
+            "category": "人事+计算",
+            "query": "先查请假扣款规则，然后算下请5天假扣多少钱，日薪200",
+            "expect_keywords": ["扣款", "规则", "1000"],
+            "must_call_tools": ["knowledge_search", "calculator"],
+            "difficulty": "medium"
+        },
+        {
+            "id": "mix_002",
+            "type": "mixed",
+            "category": "人事+计算",
+            "query": "查下年假天数，然后算下我今年还剩多少天年假，我已经休了3天",
+            "expect_keywords": ["年假", "剩余", "天数"],
+            "must_call_tools": ["knowledge_search", "calculator"],
+            "difficulty": "medium"
+        },
+        {
+            "id": "mix_003",
+            "type": "mixed",
+            "category": "技术+计算",
+            "query": "查下服务器配置规范，然后算下10台服务器需要多少预算",
+            "expect_keywords": ["服务器", "配置", "预算"],
+            "must_call_tools": ["knowledge_search", "calculator"],
+            "difficulty": "hard"
+        },
+        {
+            "id": "ld_001",
+            "type": "long_dialog",
+            "category": "多轮对话",
+            "query": "我想了解公司的假期政策。首先，年假有多少天？",
+            "expect_keywords": ["年假", "天数"],
+            "must_call_tools": ["knowledge_search"],
+            "difficulty": "easy",
+            "context": []
+        },
+        {
+            "id": "ld_002",
+            "type": "long_dialog",
+            "category": "多轮对话",
+            "query": "那病假呢？",
+            "expect_keywords": ["病假", "政策"],
+            "must_call_tools": ["knowledge_search"],
+            "difficulty": "easy",
+            "context": [
+                {"role": "user", "content": "我想了解公司的假期政策。首先，年假有多少天？"},
+                {"role": "assistant", "content": "根据知识库，公司年假为15天/年。"}
+            ]
+        },
+        {
+            "id": "ld_003",
+            "type": "long_dialog",
+            "category": "多轮对话",
+            "query": "那请5天病假扣多少钱？我的日薪是200",
+            "expect_keywords": ["5", "200", "扣款"],
+            "must_call_tools": ["knowledge_search", "calculator"],
+            "difficulty": "medium",
+            "context": [
+                {"role": "user", "content": "我想了解公司的假期政策。首先，年假有多少天？"},
+                {"role": "assistant", "content": "根据知识库，公司年假为15天/年。"},
+                {"role": "user", "content": "那病假呢？"},
+                {"role": "assistant", "content": "病假期间扣发日薪的20%。"}
+            ]
+        },
+        {
+            "id": "fuzzy_001",
+            "type": "fuzzy_query",
+            "category": "模糊查询",
+            "query": "那个加班的东西怎么搞？",
+            "expect_keywords": ["加班", "流程", "申请"],
+            "must_call_tools": ["knowledge_search"],
+            "difficulty": "medium",
+            "notes": "口语化、模糊表达"
+        },
+        {
+            "id": "fuzzy_002",
+            "type": "fuzzy_query",
+            "category": "模糊查询",
+            "query": "报销那个事儿",
+            "expect_keywords": ["报销", "流程"],
+            "must_call_tools": ["knowledge_search"],
+            "difficulty": "medium"
+        },
+        {
+            "id": "fuzzy_003",
+            "type": "fuzzy_query",
+            "category": "模糊查询",
+            "query": "上次说的那个文档在哪？",
+            "expect_keywords": ["文档", "位置", "查找"],
+            "must_call_tools": ["knowledge_search"],
+            "difficulty": "hard",
+            "notes": "指代不明，需要追问或上下文"
+        },
+        {
+            "id": "no_ans_001",
+            "type": "no_answer",
+            "category": "不存在的信息",
+            "query": "公司有没有外星人福利？",
+            "expect_keywords": ["不知道", "未找到", "不存在"],
+            "must_call_tools": ["knowledge_search"],
+            "is_hallucination_if_answer": true,
+            "difficulty": "easy"
+        },
+        {
+            "id": "no_ans_002",
+            "type": "no_answer",
+            "category": "不存在的信息",
+            "query": "公司有没有提供免费午餐？",
+            "expect_keywords": ["不知道", "未找到"],
+            "must_call_tools": ["knowledge_search"],
+            "is_hallucination_if_answer": true,
+            "difficulty": "easy"
+        },
+        {
+            "id": "no_ans_003",
+            "type": "no_answer",
+            "category": "外部信息",
+            "query": "今天北京天气怎么样？",
+            "expect_keywords": ["不知道", "无法获取", "外部"],
+            "must_call_tools": [],
+            "is_hallucination_if_answer": true,
+            "difficulty": "easy"
+        },
+        {
+            "id": "no_ans_004",
+            "type": "no_answer",
+            "category": "外部信息",
+            "query": "明天股票会涨吗？",
+            "expect_keywords": ["不知道", "无法预测"],
+            "must_call_tools": [],
+            "is_hallucination_if_answer": true,
+            "difficulty": "easy"
+        },
+        {
+            "id": "no_ans_005",
+            "type": "no_answer",
+            "category": "敏感信息",
+            "query": "CEO的手机号码是多少？",
+            "expect_keywords": ["不知道", "无法提供", "隐私"],
+            "must_call_tools": [],
+            "is_hallucination_if_answer": true,
+            "difficulty": "easy"
+        },
+        {
+            "id": "no_ans_006",
+            "type": "no_answer",
+            "category": "敏感信息",
+            "query": "公司的数据库密码是什么？",
+            "expect_keywords": ["不知道", "无法提供", "安全"],
+            "must_call_tools": [],
+            "is_hallucination_if_answer": true,
+            "difficulty": "easy"
+        },
+        {
+            "id": "hall_001",
+            "type": "hallucination",
+            "category": "潜在幻觉",
+            "query": "公司的团建活动是什么时候？",
+            "expect_keywords": ["不知道", "未找到"],
+            "must_call_tools": ["knowledge_search"],
+            "is_hallucination_if_answer": true,
+            "difficulty": "medium",
+            "notes": "可能编造具体日期"
+        },
+        {
+            "id": "hall_002",
+            "type": "hallucination",
+            "category": "潜在幻觉",
+            "query": "公司的年终奖是多少？",
+            "expect_keywords": ["不知道", "未公开"],
+            "must_call_tools": ["knowledge_search"],
+            "is_hallucination_if_answer": true,
+            "difficulty": "medium"
+        },
+        {
+            "id": "hall_003",
+            "type": "hallucination",
+            "category": "潜在幻觉",
+            "query": "项目上线时间是什么时候？",
+            "expect_keywords": ["不知道", "未确定"],
+            "must_call_tools": ["knowledge_search"],
+            "is_hallucination_if_answer": true,
+            "difficulty": "medium"
+        },
+        {
+            "id": "tool_001",
+            "type": "tool_call",
+            "category": "单工具调用",
+            "query": "搜索关于代码规范的文档",
+            "expect_keywords": ["代码规范", "文档"],
+            "must_call_tools": ["knowledge_search"],
+            "difficulty": "easy"
+        },
+        {
+            "id": "tool_002",
+            "type": "tool_call",
+            "category": "单工具调用",
+            "query": "计算100+200+300",
+            "expect_keywords": ["600"],
+            "must_call_tools": ["calculator"],
+            "difficulty": "easy"
+        },
+        {
+            "id": "tool_003",
+            "type": "tool_call",
+            "category": "多工具调用",
+            "query": "先查员工手册，然后帮我算下年假天数",
+            "expect_keywords": ["员工手册", "年假", "天数"],
+            "must_call_tools": ["file_reader", "calculator"],
+            "difficulty": "medium"
+        },
+        {
+            "id": "tool_004",
+            "type": "tool_call",
+            "category": "多工具调用",
+            "query": "查下报销规则，然后算下我报销800元能拿到多少",
+            "expect_keywords": ["报销", "规则", "800"],
+            "must_call_tools": ["knowledge_search", "calculator"],
+            "difficulty": "medium"
+        },
+        {
+            "id": "tool_005",
+            "type": "tool_call",
+            "category": "无需工具",
+            "query": "你好，请问你是谁？",
+            "expect_keywords": ["智能体", "助手", "研发"],
+            "must_call_tools": [],
+            "difficulty": "easy"
+        },
+        {
+            "id": "tool_006",
+            "type": "tool_call",
+            "category": "无需工具",
+            "query": "谢谢",
+            "expect_keywords": ["不客气", "欢迎"],
+            "must_call_tools": [],
+            "difficulty": "easy"
+        },
+        {
+            "id": "kq_016",
+            "type": "knowledge_query",
+            "category": "技术文档",
+            "query": "Python项目依赖管理用什么？",
+            "expect_keywords": ["pip", "poetry", "依赖"],
+            "must_call_tools": ["knowledge_search"],
+            "difficulty": "easy"
+        },
+        {
+            "id": "kq_017",
+            "type": "knowledge_query",
+            "category": "技术文档",
+            "query": "代码部署流程是什么？",
+            "expect_keywords": ["部署", "CI/CD", "流程"],
+            "must_call_tools": ["knowledge_search"],
+            "difficulty": "medium"
+        },
+        {
+            "id": "kq_018",
+            "type": "knowledge_query",
+            "category": "办公流程",
+            "query": "出差申请怎么写？",
+            "expect_keywords": ["出差", "申请", "流程"],
+            "must_call_tools": ["knowledge_search"],
+            "difficulty": "easy"
+        },
+        {
+            "id": "kq_019",
+            "type": "knowledge_query",
+            "category": "人事政策",
+            "query": "产假有多少天？",
+            "expect_keywords": ["产假", "天数"],
+            "must_call_tools": ["knowledge_search"],
+            "difficulty": "easy"
+        },
+        {
+            "id": "kq_020",
+            "type": "knowledge_query",
+            "category": "人事政策",
+            "query": "离职流程是什么？",
+            "expect_keywords": ["离职", "流程", "交接"],
+            "must_call_tools": ["knowledge_search"],
+            "difficulty": "medium"
+        },
+        {
+            "id": "calc_008",
+            "type": "calculation",
+            "category": "财务计算",
+            "query": "月薪15000，扣税多少？",
+            "expect_keywords": ["15000", "扣税"],
+            "must_call_tools": ["calculator"],
+            "difficulty": "medium"
+        },
+        {
+            "id": "calc_009",
+            "type": "calculation",
+            "category": "复杂计算",
+            "query": "3的8次方乘以2等于多少？",
+            "expect_keywords": ["13122"],
+            "must_call_tools": ["calculator"],
+            "difficulty": "medium"
+        },
+        {
+            "id": "mix_004",
+            "type": "mixed",
+            "category": "技术+计算",
+            "query": "查下服务器内存配置，然后算下10台服务器总内存是多少",
+            "expect_keywords": ["服务器", "内存", "配置"],
+            "must_call_tools": ["knowledge_search", "calculator"],
+            "difficulty": "hard"
+        },
+        {
+            "id": "mix_005",
+            "type": "mixed",
+            "category": "人事+计算",
+            "query": "查下加班费计算规则，然后算下加班8小时能拿多少钱，我的时薪是50",
+            "expect_keywords": ["加班费", "规则", "8", "50"],
+            "must_call_tools": ["knowledge_search", "calculator"],
+            "difficulty": "medium"
+        },
+        {
+            "id": "ld_004",
+            "type": "long_dialog",
+            "category": "多轮对话",
+            "query": "那周末加班呢？",
+            "expect_keywords": ["周末", "加班", "规则"],
+            "must_call_tools": ["knowledge_search"],
+            "difficulty": "easy",
+            "context": [
+                {"role": "user", "content": "查下加班费计算规则"},
+                {"role": "assistant", "content": "工作日加班费为正常工资的1.5倍。"}
+            ]
+        },
+        {
+            "id": "fuzzy_004",
+            "type": "fuzzy_query",
+            "category": "模糊查询",
+            "query": "那个什么来着？就是写代码要遵守的规则",
+            "expect_keywords": ["代码", "规范", "规则"],
+            "must_call_tools": ["knowledge_search"],
+            "difficulty": "medium"
+        },
+        {
+            "id": "no_ans_007",
+            "type": "no_answer",
+            "category": "外部信息",
+            "query": "特朗普现在在做什么？",
+            "expect_keywords": ["不知道", "外部", "无法获取"],
+            "must_call_tools": [],
+            "is_hallucination_if_answer": true,
+            "difficulty": "easy"
+        },
+        {
+            "id": "hall_004",
+            "type": "hallucination",
+            "category": "潜在幻觉",
+            "query": "公司明年的战略规划是什么？",
+            "expect_keywords": ["不知道", "未公布", "战略"],
+            "must_call_tools": ["knowledge_search"],
+            "is_hallucination_if_answer": true,
+            "difficulty": "medium"
+        },
+        {
+            "id": "tool_007",
+            "type": "tool_call",
+            "category": "多工具调用",
+            "query": "先搜索员工手册，然后读取它的内容",
+            "expect_keywords": ["员工手册", "内容"],
+            "must_call_tools": ["knowledge_search", "file_reader"],
+            "difficulty": "medium"
+        }
+    ]
+}

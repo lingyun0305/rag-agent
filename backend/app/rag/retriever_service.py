@@ -6,6 +6,7 @@ from backend.app.rag.bm25_service import bm25_service
 from backend.app.rag.hyde_service import hyde_service
 from backend.app.rag.rerank_service import rerank_service
 from backend.app.utils.vector_store import vector_store_util,get_vector_store
+from backend.app.core.cache import cache_service
 
 class RetrieverService:
     """
@@ -32,13 +33,14 @@ class RetrieverService:
 
     # ====== 检索主入口 ======
 
-    def retrieve(
+    async def retrieve(
         self,
         query:str,
         strategy:str = "hybrid",
         collection_name:str = "default_collection",
         use_rerank:Optional[bool] = None,
         filter_dict:Optional[Dict] = None,
+        skip_cache:bool = False,
     )->List[Document]:
         """
         检索主入口
@@ -48,24 +50,51 @@ class RetrieverService:
             collect_name:知识库集合名字
             use_rerank: 是否启用Rerank
             filter_dict: 元数据过滤条件
+            skip_cache: 是否跳过缓存
         Returns:
             相关文档列表
         """
-        should_rerank = use_rerank if use_rerank is not None else self.use_rerank
+        cache_key = f"search:{cache_service.generate_key_hash(query, strategy, collection_name, use_rerank, filter_dict)}"
 
-        if strategy == "vector":
-            candidates = self.retrieve_vector(query=query,collection_name = collection_name,filter_dict=filter_dict)
-        elif strategy == "bm25":
-            candidates = self.retrieve_bm25(query=query)
-        elif strategy == "hyde":
-            candidates = self.retrieve_hyde(query=query,collection_name = collection_name,filter_dict=filter_dict)
-        else:
-            candidates = self.hybrid_retrieve(query=query,collection_name = collection_name,filter_dict=filter_dict)
+        async def _do_retrieve():
+            should_rerank = use_rerank if use_rerank is not None else self.use_rerank
 
-        if should_rerank and len(candidates)>0:
-            self.rerank_results(query=query,documents=candidates)
-        
-        return candidates[:self.rerank_top_k]
+            if strategy == "vector":
+                candidates = self.retrieve_vector(query=query,collection_name = collection_name,filter_dict=filter_dict)
+            elif strategy == "bm25":
+                candidates = self.retrieve_bm25(query=query)
+            elif strategy == "hyde":
+                candidates = self.retrieve_hyde(query=query,collection_name = collection_name,filter_dict=filter_dict)
+            else:
+                candidates = self.hybrid_retrieve(query=query,collection_name = collection_name,filter_dict=filter_dict)
+
+            if should_rerank and len(candidates)>0:
+                self.rerank_results(query=query,documents=candidates)
+            
+            return [self._doc_to_dict(doc) for doc in candidates[:self.rerank_top_k]]
+
+        cached_docs = await cache_service.get_or_compute(
+            key=cache_key,
+            ttl=300,
+            compute_fn=_do_retrieve,
+            skip_cache=skip_cache,
+        )
+
+        return [self._dict_to_doc(doc_dict) for doc_dict in cached_docs]
+
+    def _doc_to_dict(self, doc: Document) -> Dict:
+        """将Document转为字典用于缓存"""
+        return {
+            "page_content": doc.page_content,
+            "metadata": doc.metadata,
+        }
+
+    def _dict_to_doc(self, doc_dict: Dict) -> Document:
+        """将字典转回Document"""
+        return Document(
+            page_content=doc_dict["page_content"],
+            metadata=doc_dict.get("metadata", {}),
+        )
     
     # ====== 各类检索策略 ======
 

@@ -22,11 +22,14 @@ pydantic>=2.0.0
 langchain>=0.1.0
 langchain-community>=0.0.10
 langchain-text-splitters>=0.0.1
-faiss-cpu>=1.7.4
-sentence-transformers>=2.2.2
+langchain-core>=0.1.0
 langchain-openai>=0.1.0
 langchain-classic>=0.2.0
 
+# LangGraph (ReAct Agent 核心)
+langgraph>=0.0.20
+
+sentence-transformers>=2.2.2
 chromadb>=0.5.0
 jieba>=0.42.1
 
@@ -35,6 +38,8 @@ dashscope>=1.19.0
 
 # 文本加载
 pypdf>=4.0.0
+openpyxl>=3.1.0
+docx2txt>=0.8
 
 #JWT鉴权
 pyjwt>=2.8.0

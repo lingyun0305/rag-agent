@@ -1,4 +1,4 @@
-# Python 缓存文件
+# ====== Python 缓存文件 ======
 __pycache__/
 *.pyc
 *.pyo
@@ -7,21 +7,74 @@ __pycache__/
 dist/
 build/
 
-# 环境变量文件
+# ====== 环境变量文件 ======
 .env
 .env.local
 .env.*
 backend/.env
 
-# 虚拟环境
+# ====== 虚拟环境 ======
 venv/
 .venv/
 env/
 ENV/
 
-# 日志文件
+# ====== 日志文件 ======
 logs/
 *.log
 
-# VSCode 配置
+# ====== IDE 配置 ======
 .vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ====== 数据库文件 ======
+*.db
+*.sqlite
+*.sqlite3
+
+# ====== 向量数据库 ======
+chroma_db/
+
+# ====== 用户上传文件 ======
+knowledge_files/
+uploads/
+
+# ====== 模型文件 ======
+models/
+*.bin
+*.safetensors
+*.onnx
+*.pt
+*.pth
+*.ckpt
+
+# ====== 测试文件 ======
+test_*.py
+*_test.py
+tests/
+
+# ====== 临时文件 ======
+tmp/
+temp/
+*.tmp
+*.bak
+
+# ====== 系统文件 ======
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ====== 大文件/二进制文件 ======
+*.mp3
+*.mp4
+*.avi
+*.mov
+*.zip
+*.tar.gz
+*.rar
+
+# ====== 文档导出文件（临时） ======
+API文档.docx
