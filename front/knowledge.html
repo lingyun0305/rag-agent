@@ -308,7 +308,7 @@
         .toast.error { background: #ff4757; }
         @keyframes slideIn { from { opacity: 0; transform: translateX(100%); } to { opacity: 1; transform: translateX(0); } }
     </style>
-    <script src="/front/js/auth.js?v=20260801"></script>
+    <script src="/front/js/auth.js?v=20260812"></script>
 </head>
 <body>
     <div class="app-container">
@@ -482,6 +482,8 @@
         // 从 URL 恢复 folder_path 状态
         const urlParams = new URLSearchParams(window.location.search);
         const folderPathParam = urlParams.get('folder_path');
+        const folderIdParam = urlParams.get('folder_id');
+        
         if (folderPathParam) {
             try {
                 const savedStack = JSON.parse(decodeURIComponent(folderPathParam));
@@ -494,7 +496,26 @@
             } catch (e) {
                 console.warn('解析 folder_path 失败:', e);
             }
+        } else if (folderIdParam) {
+            // 直接通过 folder_id 进入某个文件夹（无完整路径信息）
+            currentFolderId = folderIdParam;
+            // 填充 folderStack 最少一项，确保面包屑正常
+            folderStack = [{ id: folderIdParam, name: '文件夹' }];
+            // 尝试获取文件夹名称
+            try {
+                const folderRes = await Auth.fetch(`/api/knowledge/folder/${folderIdParam}`);
+                if (folderRes.ok) {
+                    const folderData = await folderRes.json();
+                    if (folderData.name) {
+                        currentFolderName = folderData.name;
+                        folderStack = [{ id: folderIdParam, name: folderData.name }];
+                    }
+                }
+            } catch (e) {
+                console.warn('获取文件夹信息失败:', e);
+            }
         }
+        
         await loadData();
         setupGlobalClick();
     });

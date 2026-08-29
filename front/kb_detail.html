@@ -529,7 +529,8 @@
             font-size: 14px; line-height: 1.7; color: #334155;
             max-height: 100px; overflow: hidden;
             transition: max-height 0.3s ease;
-            white-space: pre-wrap; word-break: break-word;
+            white-space: pre-wrap; 
+            word-break: break-word;
         }
         .chunk-content.expanded { max-height: 1000px; }
         .chunk-content.collapsed::after {
@@ -562,7 +563,7 @@
         /* 隐藏内容区 */
         .content-area.hidden { display: none; }
     </style>
-    <script src="/front/js/auth.js?v=20260802"></script>
+    <script src="/front/js/auth.js?v=20260812"></script>
 </head>
 <body>
     <div class="app-container">
@@ -1344,16 +1345,15 @@
         if (breadcrumbLevel === 'file') {
             closeFileDetail();
         } else {
-            // 返回上一级：弹出最后一级文件夹
+            // 优先用 folderStack（支持嵌套文件夹路径）
             if (folderStack.length > 0) {
-                folderStack.pop();
-            }
-            if (folderStack.length > 0) {
-                // 还有上级文件夹，返回到该文件夹
-                const prevFolderPath = encodeURIComponent(JSON.stringify(folderStack));
-                location.href = `/front/knowledge.html?folder_path=${prevFolderPath}`;
+                const folderPath = encodeURIComponent(JSON.stringify(folderStack));
+                location.href = `/front/knowledge.html?folder_path=${folderPath}`;
+            } else if (kbDetail && kbDetail.folder_id) {
+                // 回退：用知识库自身的 folder_id 直接跳转
+                location.href = `/front/knowledge.html?folder_id=${kbDetail.folder_id}`;
             } else {
-                // 已到根目录
+                // 根目录下的知识库
                 location.href = '/front/knowledge.html';
             }
         }

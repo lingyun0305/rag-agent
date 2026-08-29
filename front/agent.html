@@ -1,0 +1,1723 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Agent管理 - AI对话助手</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            background: #f0f2f5;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+            width: 100%;
+        }
+
+        /* ===== 侧边栏 ===== */
+        .sidebar {
+            width: 64px;
+            background: #1a1d29;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 16px 0;
+            flex-shrink: 0;
+        }
+
+        .sidebar-logo {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            margin-bottom: 24px;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+            align-items: center;
+        }
+
+        .sidebar-item {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #8892a0;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .sidebar-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #ffffff;
+        }
+
+        .sidebar-item.active {
+            background: rgba(64, 224, 208, 0.2);
+            color: #40E0D0;
+        }
+
+        .sidebar-item svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .sidebar-item .tooltip {
+            position: absolute;
+            left: 56px;
+            background: #2d3748;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            z-index: 100;
+        }
+
+        .sidebar-item:hover .tooltip {
+            opacity: 1;
+        }
+
+        .sidebar-bottom {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+            align-items: center;
+        }
+
+        .sidebar-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* Agent 表单：点击圆形头像上传 */
+        .agent-avatar-upload-wrap {
+            position: relative;
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            overflow: hidden;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .agent-avatar-upload-preview {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%);
+            color: #fff;
+            font-size: 30px;
+            overflow: hidden;
+        }
+
+        .agent-avatar-upload-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .agent-avatar-upload-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+            line-height: 1.2;
+        }
+
+        .agent-avatar-upload-wrap:hover .agent-avatar-upload-overlay {
+            opacity: 1;
+        }
+
+        /* ===== 主内容区域 ===== */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: #f8f9fa;
+        }
+
+        .page-header {
+            padding: 20px 24px;
+            background: #ffffff;
+            border-bottom: 1px solid #e8ecf1;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .page-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a2e;
+        }
+
+        .page-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .search-input-wrapper {
+            position: relative;
+            width: 260px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 9px 14px 9px 36px;
+            border: 1px solid #e8ecf1;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #2d3748;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .search-input:focus {
+            border-color: #40E0D0;
+            box-shadow: 0 0 0 3px rgba(64, 224, 208, 0.1);
+        }
+
+        .search-input::placeholder {
+            color: #9ca3af;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #8892a0;
+            font-size: 14px;
+        }
+
+        .btn {
+            padding: 9px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(64, 224, 208, 0.3);
+        }
+
+        /* ===== 页面内容 ===== */
+        .page-content {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+        }
+
+        .page-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .page-content::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 3px;
+        }
+
+        /* ===== 空状态 ===== */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            padding: 80px 20px;
+            color: #999;
+        }
+
+        .empty-state .icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            color: #ddd;
+        }
+
+        .empty-state h3 {
+            font-size: 18px;
+            font-weight: 500;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+            color: #999;
+            margin-bottom: 24px;
+        }
+
+        /* ===== Agent卡片 ===== */
+        .agent-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+        }
+
+        .agent-card {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #e8ecf1;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            position: relative;
+        }
+
+        .agent-card:hover {
+            border-color: #40E0D0;
+            box-shadow: 0 2px 12px rgba(64, 224, 208, 0.15);
+        }
+
+        .agent-card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .agent-card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        .agent-card-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .agent-card-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .agent-card-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a1a2e;
+            margin-bottom: 4px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .agent-card-desc {
+            font-size: 13px;
+            color: #8892a0;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .agent-card-actions {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            display: flex;
+            gap: 4px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .agent-card:hover .agent-card-actions {
+            opacity: 1;
+        }
+
+        .agent-card-action-btn {
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: #f1f5f9;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .agent-card-action-btn:hover {
+            background: #e2e8f0;
+            color: #1a1a2e;
+        }
+
+        .agent-card-meta {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding-top: 12px;
+            border-top: 1px solid #f1f5f9;
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        .agent-card-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* ===== Toast提示 ===== */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 14px 22px;
+            border-radius: 10px;
+            color: white;
+            font-size: 14px;
+            z-index: 2000;
+            animation: slideIn 0.3s;
+            display: none;
+        }
+
+        .toast.show {
+            display: block;
+        }
+
+        .toast.success {
+            background: #2ed573;
+        }
+
+        .toast.error {
+            background: #ff4757;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(100%); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* ===== 加载动画 ===== */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: #9ca3af;
+        }
+
+        .loading-spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid #e8ecf1;
+            border-top-color: #40E0D0;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+    <script src="/front/js/auth.js?v=20260812"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 侧边栏 -->
+        <div class="sidebar">
+            <div class="sidebar-logo">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="10" rx="2"></rect>
+                    <circle cx="12" cy="5" r="2"></circle>
+                    <path d="M12 7v4"></path>
+                </svg>
+            </div>
+            <div class="sidebar-nav">
+                <div class="sidebar-item" onclick="location.href='/front/'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    <span class="tooltip">对话</span>
+                </div>
+                <div class="sidebar-item" onclick="location.href='/front/knowledge.html'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                    </svg>
+                    <span class="tooltip">知识库</span>
+                </div>
+                <div class="sidebar-item active" onclick="location.href='/front/agent.html'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>
+                    <span class="tooltip">Agent</span>
+                </div>
+                <div class="sidebar-item" onclick="location.href='/front/workbench.html'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+                    </svg>
+                    <span class="tooltip">工作台</span>
+                </div>
+                <div class="sidebar-item" onclick="location.href='/front/account.html'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <span class="tooltip">账号</span>
+                </div>
+            </div>
+            <div class="sidebar-bottom">
+                <div class="sidebar-avatar" onclick="location.href='/front/account.html'">U</div>
+            </div>
+        </div>
+
+        <!-- 主内容区域 -->
+        <div class="main-content">
+            <div class="page-header">
+                <div class="page-title">Agent 列表</div>
+                <div class="page-actions">
+                    <div class="search-input-wrapper">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="agentSearch" class="search-input" placeholder="搜索Agent" oninput="filterAgents()">
+                    </div>
+                    <button class="btn btn-primary" onclick="openTemplateGallery()" style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+                            <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+                            <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+                            <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+                        </svg>
+                        从模板创建
+                    </button>
+                    <button class="btn btn-primary" onclick="showCreateModal()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        创建Agent
+                    </button>
+                </div>
+            </div>
+            <div class="page-content" id="agentContent">
+                <div class="empty-state" id="agentEmpty">
+                    <div class="icon">🤖</div>
+                    <h3>创建你的第一个Agent</h3>
+                    <p>通过配置工具和知识库，创建专属的智能助手</p>
+                    <button class="btn btn-primary" onclick="showCreateModal()">创建Agent</button>
+                </div>
+                <div class="agent-grid" id="agentList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 创建Agent弹窗 -->
+    <div id="createModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+        <div style="background:white; border-radius:16px; width:600px; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+            <div style="padding:24px; border-bottom:1px solid #e8ecf1; display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="font-size:18px; font-weight:600; color:#1a1a2e;">创建 Agent</h3>
+                <button onclick="hideCreateModal()" style="border:none; background:transparent; font-size:24px; cursor:pointer; color:#999;">×</button>
+            </div>
+            <div style="padding:24px;">
+                <div style="margin-bottom:20px;">
+                    <label style="display:block; font-size:14px; font-weight:500; color:#374151; margin-bottom:8px;">Agent 名称</label>
+                    <input type="text" id="agentName" style="width:100%; padding:10px 14px; border:1px solid #e8ecf1; border-radius:8px; font-size:14px; outline:none;" placeholder="请输入Agent名称">
+                </div>
+                <div style="margin-bottom:20px;">
+                    <label style="display:block; font-size:14px; font-weight:500; color:#374151; margin-bottom:8px;">头像</label>
+                    <div style="display:flex; align-items:center; gap:14px;">
+                        <div class="agent-avatar-upload-wrap" onclick="document.getElementById('agentAvatarInput').click()">
+                            <div id="agentAvatarPreview" class="agent-avatar-upload-preview">🤖</div>
+                            <div class="agent-avatar-upload-overlay">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                                <span>更换</span>
+                            </div>
+                        </div>
+                        <input type="file" id="agentAvatarInput" accept="image/*" style="display:none;" onchange="handleAgentAvatarUpload(event)">
+                        <input type="hidden" id="agentAvatar" value="🤖">
+                    </div>
+                    <div style="font-size:12px; color:#9ca3af; margin-top:6px;">支持 jpg/png/gif/webp，≤2MB；点击头像上传</div>
+                </div>
+                <div style="margin-bottom:20px;">
+                    <label style="display:block; font-size:14px; font-weight:500; color:#374151; margin-bottom:8px;">提示词 (System Prompt)</label>
+                    <textarea id="agentSystemPrompt" style="width:100%; padding:10px 14px; border:1px solid #e8ecf1; border-radius:8px; font-size:14px; outline:none; min-height:80px; resize:vertical;" placeholder="设置Agent的系统提示词，定义其角色和行为..."></textarea>
+                </div>
+                <div style="margin-bottom:20px;">
+                    <label style="display:block; font-size:14px; font-weight:500; color:#374151; margin-bottom:8px;">描述</label>
+                    <input type="text" id="agentDesc" style="width:100%; padding:10px 14px; border:1px solid #e8ecf1; border-radius:8px; font-size:14px; outline:none;" placeholder="简要描述这个Agent的功能">
+                </div>
+
+                <!-- 工具选择 -->
+                <div style="margin-bottom:20px;">
+                    <label style="display:block; font-size:14px; font-weight:500; color:#374151; margin-bottom:8px;">工具</label>
+                    <div id="selectedTools" style="min-height:60px; padding:10px; border:1px dashed #e8ecf1; border-radius:8px; background:#fafafa; cursor:pointer;" onclick="showToolSelectModal()">
+                        <span style="color:#9ca3af; font-size:14px;" id="toolsPlaceholder">点击选择工具</span>
+                    </div>
+                </div>
+
+                <!-- 知识库选择 -->
+                <div style="margin-bottom:20px;">
+                    <label style="display:block; font-size:14px; font-weight:500; color:#374151; margin-bottom:8px;">知识库</label>
+                    <div id="selectedKBs" style="min-height:60px; padding:10px; border:1px dashed #e8ecf1; border-radius:8px; background:#fafafa; cursor:pointer;" onclick="showKBSelectModal()">
+                        <span style="color:#9ca3af; font-size:14px;" id="kbsPlaceholder">点击选择知识库</span>
+                    </div>
+                </div>
+
+                <div style="margin-bottom:20px;">
+                    <label style="display:block; font-size:14px; font-weight:500; color:#374151; margin-bottom:8px;">对话开场白</label>
+                    <textarea id="agentGreeting" style="width:100%; padding:10px 14px; border:1px solid #e8ecf1; border-radius:8px; font-size:14px; outline:none; min-height:60px; resize:vertical;" placeholder="设置Agent的开场问候语..."></textarea>
+                </div>
+
+                <div style="margin-bottom:20px;">
+                    <label style="display:flex; justify-content:space-between; align-items:center; font-size:14px; font-weight:500; color:#374151; margin-bottom:8px;">
+                        <span>温度 <span style="color:#9ca3af; font-weight:normal; font-size:12px;">(0-1，越高越有创造性)</span></span>
+                        <span id="agentTempValue" style="color:#40E0D0; font-weight:600;">0.70</span>
+                    </label>
+                    <input type="range" id="agentTemperature" min="0" max="1" step="0.01" value="0.7"
+                        oninput="document.getElementById('agentTempValue').textContent = Number(this.value).toFixed(2)"
+                        style="width:100%; accent-color:#40E0D0;">
+                </div>
+
+                <div style="display:flex; gap:12px; justify-content:flex-end;">
+                    <button onclick="hideCreateModal()" style="padding:9px 20px; border:1px solid #e8ecf1; border-radius:8px; background:white; color:#4b5563; cursor:pointer; font-size:14px;">取消</button>
+                    <button onclick="createAgent()" style="padding:9px 20px; border:none; border-radius:8px; background:linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%); color:white; cursor:pointer; font-size:14px; font-weight:500;">创建</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 场景模板画廊弹窗 -->
+    <div id="templateGalleryModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1100; align-items:center; justify-content:center;">
+        <div style="background:white; border-radius:16px; width:640px; max-width:92vw; max-height:88vh; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:20px 24px; border-bottom:1px solid #f0f0f0;">
+                <div>
+                    <h3 style="font-size:18px; font-weight:600; color:#1a1a2e; margin:0;">从模板创建</h3>
+                    <p style="font-size:12px; color:#9ca3af; margin:4px 0 0;">选择一个场景模板，一键生成配置好的 Agent</p>
+                </div>
+                <button onclick="hideTemplateGallery()" style="background:none; border:none; font-size:20px; color:#999; cursor:pointer; width:32px; height:32px; border-radius:8px;">✕</button>
+            </div>
+            <div style="padding:24px; overflow-y:auto; flex:1;">
+                <div id="templateGalleryList" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:14px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 工具选择弹窗 -->
+    <div id="toolSelectModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1100; align-items:center; justify-content:center;">
+        <div style="background:white; border-radius:16px; width:700px; max-height:85vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+            <div style="padding:20px 24px; border-bottom:1px solid #e8ecf1; display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="font-size:18px; font-weight:600; color:#1a1a2e;">选择工具</h3>
+                <button onclick="hideToolSelectModal()" style="border:none; background:transparent; font-size:24px; cursor:pointer; color:#999;">×</button>
+            </div>
+            <div style="padding:16px 24px; border-bottom:1px solid #e8ecf1; display:flex; gap:8px;">
+                <button onclick="switchToolTab('system')" id="toolTabSystem" style="padding:6px 16px; border-radius:20px; border:none; cursor:pointer; font-size:13px; background:#40E0D0; color:white;">系统工具</button>
+                <button onclick="switchToolTab('my')" id="toolTabMy" style="padding:6px 16px; border-radius:20px; border:1px solid #e8ecf1; cursor:pointer; font-size:13px; background:white; color:#4b5563;">我的工具</button>
+            </div>
+            <div style="padding:12px 24px; border-bottom:1px solid #e8ecf1;">
+                <input type="text" id="toolSearch" style="width:100%; padding:9px 14px; border:1px solid #e8ecf1; border-radius:8px; font-size:14px; outline:none;" placeholder="搜索工具" oninput="filterToolList()">
+            </div>
+            <div style="flex:1; overflow-y:auto; padding:12px 24px;" id="toolListContainer">
+                <div id="toolList"></div>
+            </div>
+            <div style="padding:16px 24px; border-top:1px solid #e8ecf1; display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:13px; color:#64748b;">已选择 <span id="selectedToolCount" style="color:#40E0D0; font-weight:600;">0</span> 个工具</span>
+                <div style="display:flex; gap:8px;">
+                    <button onclick="hideToolSelectModal()" style="padding:8px 16px; border:1px solid #e8ecf1; border-radius:8px; background:white; color:#4b5563; cursor:pointer; font-size:13px;">取消</button>
+                    <button onclick="confirmToolSelection()" style="padding:8px 16px; border:none; border-radius:8px; background:linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%); color:white; cursor:pointer; font-size:13px; font-weight:500;">确认选择</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 工具配置详情弹窗 -->
+    <div id="toolConfigModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1200; align-items:center; justify-content:center;">
+        <div style="background:white; border-radius:16px; width:520px; max-height:80vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+            <div style="padding:20px 24px; border-bottom:1px solid #e8ecf1; display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="font-size:18px; font-weight:600; color:#1a1a2e;">工具配置</h3>
+                <button onclick="hideToolConfigModal()" style="border:none; background:transparent; font-size:24px; cursor:pointer; color:#999;">×</button>
+            </div>
+            <div id="toolConfigBody" style="flex:1; overflow-y:auto; padding:24px;">
+                <!-- 动态渲染配置表单 -->
+            </div>
+            <div style="padding:16px 24px; border-top:1px solid #e8ecf1; display:flex; justify-content:flex-end; gap:8px;">
+                <button onclick="hideToolConfigModal()" style="padding:8px 16px; border:1px solid #e8ecf1; border-radius:8px; background:white; color:#4b5563; cursor:pointer; font-size:13px;">取消</button>
+                <button onclick="saveToolConfig()" style="padding:8px 16px; border:none; border-radius:8px; background:linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%); color:white; cursor:pointer; font-size:13px; font-weight:500;">保存配置</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 知识库选择弹窗 -->
+    <div id="kbSelectModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1100; align-items:center; justify-content:center;">
+        <div style="background:white; border-radius:16px; width:800px; height:600px; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.3); overflow:hidden;">
+            <!-- 标题栏 -->
+            <div style="padding:20px 24px; border-bottom:1px solid #e8ecf1; display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
+                <h3 style="font-size:18px; font-weight:600; color:#1a1a2e;">选择知识库</h3>
+                <button onclick="hideKBSelectModal()" style="border:none; background:transparent; font-size:24px; cursor:pointer; color:#999; width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center;" onmouseover="this.style.background='#f0f2f5'" onmouseout="this.style.background='transparent'">×</button>
+            </div>
+            
+            <!-- 主内容区：左右布局 -->
+            <div style="flex:1; display:flex; overflow:hidden;">
+                <!-- 左侧：知识库列表 -->
+                <div style="flex:1; display:flex; flex-direction:column; border-right:1px solid #e8ecf1;">
+                    <!-- 搜索框 -->
+                    <div style="padding:12px 16px; border-bottom:1px solid #e8ecf1; flex-shrink:0;">
+                        <div style="position:relative;">
+                            <span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#9ca3af; font-size:14px;">🔍</span>
+                            <input type="text" id="kbSearch" style="width:100%; padding:9px 14px 9px 36px; border:1px solid #e8ecf1; border-radius:8px; font-size:14px; outline:none; background:#f8f9fa;" placeholder="搜索知识库" oninput="filterKBList()">
+                        </div>
+                    </div>
+                    
+                    <!-- 路径导航 -->
+                    <div style="padding:8px 16px; font-size:13px; color:#64748b; display:flex; align-items:center; gap:4px; flex-wrap:wrap;">
+                        <span id="kbPathNavContainer" style="display:flex; align-items:center; gap:4px; flex-wrap:wrap;"></span>
+                    </div>
+                    
+                    <!-- 知识库列表 -->
+                    <div style="flex:1; overflow-y:auto; padding:0 8px 8px;" id="kbListContainer">
+                        <div id="kbList"></div>
+                    </div>
+                    
+                    <!-- 底部：全选 -->
+                    <div style="padding:12px 16px; border-top:1px solid #e8ecf1; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <input type="checkbox" id="kbSelectAll" onchange="toggleSelectAll(this.checked)" style="width:16px; height:16px; cursor:pointer;">
+                            <label for="kbSelectAll" style="font-size:13px; color:#4b5563; cursor:pointer;">全选</label>
+                        </div>
+                        <button onclick="navigateToFolder(null)" style="font-size:12px; color:#64748b; background:none; border:none; cursor:pointer; padding:4px 8px; border-radius:4px;" onmouseover="this.style.background='#f0f2f5'" onmouseout="this.style.background='transparent'">← 返回根目录</button>
+                    </div>
+                </div>
+                
+                <!-- 右侧：已选择的知识库 -->
+                <div style="width:320px; display:flex; flex-direction:column; background:#f8f9fa;">
+                    <div style="padding:12px 16px; border-bottom:1px solid #e8ecf1; flex-shrink:0;">
+                        <span style="font-size:13px; color:#64748b;">已选择: </span>
+                        <span id="selectedKBCount" style="font-size:14px; font-weight:600; color:#1a1a2e;">0</span>
+                        <span style="font-size:13px; color:#64748b;"> 个知识库</span>
+                    </div>
+                    
+                    <div style="flex:1; overflow-y:auto; padding:12px;" id="selectedKBList">
+                        <div id="selectedKBEmpty" style="text-align:center; padding:40px 20px; color:#9ca3af;">
+                            <div style="font-size:48px; margin-bottom:12px;">📚</div>
+                            <div style="font-size:14px;">从左侧选择知识库</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 底部操作栏 -->
+            <div style="padding:16px 24px; border-top:1px solid #e8ecf1; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; background:white;">
+                <div style="font-size:12px; color:#9ca3af; display:flex; align-items:center; gap:6px;">
+                    <span>💡</span>
+                    <span>仅能选择同一个索引模型的知识库</span>
+                </div>
+                <div style="display:flex; gap:8px;">
+                    <button onclick="hideKBSelectModal()" style="padding:8px 20px; border:1px solid #e8ecf1; border-radius:8px; background:white; color:#4b5563; cursor:pointer; font-size:14px;">取消</button>
+                    <button onclick="confirmKBSelection()" style="padding:8px 20px; border:none; border-radius:8px; background:linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%); color:white; cursor:pointer; font-size:14px; font-weight:500; box-shadow:0 4px 12px rgba(64,224,208,0.3);">确认</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast提示 -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // 全局状态
+        let agentList = [];
+        let allSystemTools = [];
+        let allMyTools = [];
+        let allKBs = [];
+        let tempSelectedTools = [];  // {id, name, type, code_path, ...}
+        let tempSelectedKBs = [];     // {id, name, ...}
+        let tempToolConfigs = {};      // {工具code_path: 配置对象}
+        let currentConfigTool = null;  // 当前正在配置的工具对象
+        let editingAgentId = null;     // 编辑中的 Agent ID，null 表示新建
+        let agentSearchKeyword = '';
+        let currentToolTab = 'system';
+        let currentFolderId = null;   // 当前浏览的文件夹ID，null表示根目录
+        let currentFolderPath = [];   // 当前路径导航
+        let currentSubfolders = [];   // 当前文件夹下的子文件夹
+        let currentFolderKBs = [];    // 当前文件夹下的知识库
+
+        // API 请求
+        async function apiRequest(url, options = {}) {
+            const token = localStorage.getItem('access_token');
+            const headers = {
+                'Content-Type': 'application/json',
+                ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                ...(options.headers || {})
+            };
+
+            const response = await fetch(url, {
+                ...options,
+                headers,
+                body: options.body ? JSON.stringify(options.body) : undefined
+            });
+
+            if (response.status === 401) {
+                localStorage.removeItem('access_token');
+                window.location.href = '/front/login.html';
+                throw new Error('登录已过期');
+            }
+
+            if (!response.ok) {
+                const error = await response.json().catch(() => ({}));
+                throw new Error(error.msg || '请求失败');
+            }
+
+            return response.json();
+        }
+
+        // 加载Agent列表
+        async function loadAgents() {
+            try {
+                const data = await apiRequest(`/api/agent/agents?_t=${Date.now()}`);
+                agentList = data.agents || [];
+                renderAgentList();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        // 渲染Agent列表
+        function renderAgentList() {
+            const listEl = document.getElementById('agentList');
+            const emptyEl = document.getElementById('agentEmpty');
+            const contentEl = document.getElementById('agentContent');
+
+            const filtered = agentFilter(agentList, agentSearchKeyword);
+
+            if (filtered.length === 0) {
+                contentEl.innerHTML = '<div class="empty-state"><div class="icon">🤖</div><h3>' + 
+                    (agentList.length > 0 ? '没有找到匹配的Agent' : '创建你的第一个Agent') + 
+                    '</h3><p>' + (agentList.length > 0 ? '试试其他关键词' : '通过配置工具和知识库，创建专属的智能助手') + '</p>' +
+                    '<button class="btn btn-primary" onclick="showCreateModal()">创建Agent</button></div>';
+                return;
+            }
+
+            listEl.style.display = 'grid';
+            listEl.innerHTML = filtered.map(agent => `
+                <div class="agent-card" onclick="openAgent('${agent.id}')">
+                    <div class="agent-card-actions">
+                        <button class="agent-card-action-btn" onclick="event.stopPropagation(); editAgent('${agent.id}')" title="编辑">✏️</button>
+                        <button class="agent-card-action-btn" onclick="event.stopPropagation(); deleteAgent('${agent.id}')" title="删除">🗑️</button>
+                    </div>
+                    <div class="agent-card-header">
+                        <div class="agent-card-icon">${renderAgentAvatarContent(agent.avatar, '🤖')}</div>
+                        <div class="agent-card-info">
+                            <div class="agent-card-name">${escapeHtml(agent.name)}</div>
+                            <div class="agent-card-desc">${escapeHtml(agent.desc || '暂无描述')}</div>
+                        </div>
+                    </div>
+                    <div class="agent-card-meta">
+                        <div class="agent-card-meta-item">
+                            <span>🔧</span>
+                            <span>${agent.tools ? agent.tools.length : 0} 个工具</span>
+                        </div>
+                        <div class="agent-card-meta-item">
+                            <span>📚</span>
+                            <span>${agent.knowledge_bases ? agent.knowledge_bases.length : 0} 个知识库</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 过滤Agent列表
+        function agentFilter(agents, keyword) {
+            if (!keyword) return agents;
+            const kw = keyword.toLowerCase();
+            return agents.filter(a => 
+                a.name.toLowerCase().includes(kw) || 
+                (a.desc && a.desc.toLowerCase().includes(kw))
+            );
+        }
+
+        // 搜索过滤
+        function filterAgents() {
+            agentSearchKeyword = document.getElementById('agentSearch').value.trim();
+            renderAgentList();
+        }
+
+        // 创建Agent弹窗（agent 为 null 表示新建）
+        function showCreateModal(agent) {
+            editingAgentId = agent && agent.id ? agent.id : null;
+            document.getElementById('agentName').value = (agent && agent.name) ? agent.name : '';
+            const avatar = (agent && agent.avatar) ? agent.avatar : '🤖';
+            document.getElementById('agentAvatar').value = avatar;
+            updateAgentAvatarPreview();
+            document.getElementById('agentSystemPrompt').value = (agent && agent.system_prompt) ? agent.system_prompt : '';
+            document.getElementById('agentDesc').value = (agent && agent.desc) ? agent.desc : '';
+            document.getElementById('agentGreeting').value = (agent && agent.greeting) ? agent.greeting : '';
+            const tempEl = document.getElementById('agentTemperature');
+            if (tempEl) {
+                tempEl.value = (agent && agent.temperature != null) ? agent.temperature : 0.7;
+                const tv = document.getElementById('agentTempValue');
+                if (tv) tv.textContent = Number(tempEl.value).toFixed(2);
+            }
+            tempSelectedTools = [];
+            tempSelectedKBs = [];
+            tempToolConfigs = {};
+            updateSelectedToolsDisplay();
+            updateSelectedKBsDisplay();
+            document.getElementById('createModal').style.display = 'flex';
+        }
+
+        function hideCreateModal() {
+            document.getElementById('createModal').style.display = 'none';
+        }
+
+        function renderAgentAvatarContent(avatar, defaultEmoji) {
+            if (!avatar) avatar = defaultEmoji || '🤖';
+            if (/^https?:\/\//.test(avatar) || avatar.startsWith('/uploads/')) {
+                var fallback = defaultEmoji || '🤖';
+                return '<img src="' + avatar + '" alt="avatar" style="width:100%; height:100%; object-fit:cover;" onerror="var span=document.createElement(\'span\');span.textContent=\'' + fallback + '\';this.parentNode.replaceChild(span,this);">';
+            }
+            return '<span>' + avatar + '</span>';
+        }
+
+        function updateAgentAvatarPreview() {
+            const avatar = document.getElementById('agentAvatar').value || '🤖';
+            const preview = document.getElementById('agentAvatarPreview');
+            preview.innerHTML = renderAgentAvatarContent(avatar, '🤖');
+        }
+
+        async function handleAgentAvatarUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const previousValue = document.getElementById('agentAvatar').value;
+            const preview = document.getElementById('agentAvatarPreview');
+
+            // 本地先预览
+            const reader = new FileReader();
+            reader.onload = e => {
+                preview.innerHTML = '<img src="' + e.target.result + '" style="width:100%;height:100%;object-fit:cover;">';
+            };
+            reader.readAsDataURL(file);
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('old_url', previousValue || '');
+            const token = localStorage.getItem('access_token') || '';
+            try {
+                const res = await fetch('/api/upload/avatar', {
+                    method: 'POST',
+                    headers: { 'Authorization': token ? 'Bearer ' + token : '' },
+                    body: formData
+                });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.msg || '上传失败');
+                }
+                const data = await res.json();
+                document.getElementById('agentAvatar').value = data.url;
+                updateAgentAvatarPreview();
+                showToast('头像上传成功', 'success');
+            } catch (error) {
+                showToast('头像上传失败：' + error.message, 'error');
+                document.getElementById('agentAvatar').value = previousValue;
+                updateAgentAvatarPreview();
+            } finally {
+                event.target.value = '';
+            }
+        }
+
+        // 创建/更新Agent（根据 editingAgentId 决定 POST 还是 PUT）
+        async function createAgent() {
+            const name = document.getElementById('agentName').value.trim();
+            const systemPrompt = document.getElementById('agentSystemPrompt').value.trim();
+            const desc = document.getElementById('agentDesc').value.trim();
+            const greeting = document.getElementById('agentGreeting').value.trim();
+            const temperature = parseFloat(document.getElementById('agentTemperature') ? document.getElementById('agentTemperature').value : 0.7);
+
+            if (!name) {
+                showToast('请输入Agent名称', 'error');
+                return;
+            }
+
+            // 所有工具统一处理（系统工具和自定义工具的ID都是字符串）
+            const toolIds = tempSelectedTools.map(t => t.id);
+
+            // 构造工具级配置：只要选择了"知识库查询"工具，就一定把配置带下去，避免只改默认值时没保存
+            const toolConfigs = {};
+            const hasKS = tempSelectedTools.some(t => t.code_path === 'knowledge_search' || (t.name || '').includes('知识库查询'));
+            if (hasKS) {
+                toolConfigs['knowledge_search'] = tempToolConfigs['knowledge_search'] || {
+                    top_k: 5, similarity_threshold: 0.0, strategy: 'hybrid', use_rerank: true, enable_query_rewrite: false
+                };
+            }
+
+            const body = {
+                name,
+                avatar: document.getElementById('agentAvatar').value.trim() || '🤖',
+                desc,
+                system_prompt: systemPrompt,
+                temperature,
+                tool_ids: toolIds,
+                kb_ids: tempSelectedKBs.map(k => k.id),
+                greeting,
+                tool_configs: toolConfigs
+            };
+
+            try {
+                if (editingAgentId) {
+                    await apiRequest(`/api/agent/agents/${editingAgentId}`, { method: 'PUT', body });
+                    showToast('Agent更新成功', 'success');
+                } else {
+                    await apiRequest('/api/agent/agents', { method: 'POST', body });
+                    showToast('Agent创建成功', 'success');
+                }
+                hideCreateModal();
+                loadAgents();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        // ====== 场景模板画廊逻辑 ======
+
+        let templateGalleryData = [];
+
+        async function openTemplateGallery() {
+            document.getElementById('templateGalleryModal').style.display = 'flex';
+            const listEl = document.getElementById('templateGalleryList');
+            listEl.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px; color:#9ca3af;">加载中...</div>';
+            try {
+                const data = await apiRequest('/api/agent/templates');
+                templateGalleryData = data.templates || [];
+                if (templateGalleryData.length === 0) {
+                    listEl.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px; color:#9ca3af;">暂无模板</div>';
+                    return;
+                }
+                listEl.innerHTML = templateGalleryData.map(t => `
+                    <div onclick="applyTemplate('${t.id}')"
+                        style="padding:18px; border:1px solid #e8ecf1; border-radius:14px; cursor:pointer; transition:all 0.2s; background:white; display:flex; flex-direction:column;"
+                        onmouseover="this.style.borderColor='#40E0D0'; this.style.boxShadow='0 6px 18px rgba(64,224,208,0.15)';"
+                        onmouseout="this.style.borderColor='#e8ecf1'; this.style.boxShadow='none';">
+                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+                            <span style="font-size:24px;">${t.icon || '🧩'}</span>
+                            <span style="font-size:15px; font-weight:600; color:#1a1a2e;">${escapeHtml(t.name)}</span>
+                        </div>
+                        <div style="font-size:13px; color:#8892a0; line-height:1.5; margin-bottom:12px; flex:1;">${escapeHtml(t.desc || '')}</div>
+                        <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                            ${(t.tags || []).map(tag => `<span style="padding:2px 8px; background:#f1f5f9; color:#64748b; border-radius:8px; font-size:11px;">${escapeHtml(tag)}</span>`).join('')}
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                listEl.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px; color:#9ca3af;">加载失败</div>';
+            }
+        }
+
+        function hideTemplateGallery() {
+            document.getElementById('templateGalleryModal').style.display = 'none';
+        }
+
+        async function applyTemplate(id) {
+            const tpl = templateGalleryData.find(t => t.id === id);
+            if (!tpl) return;
+            hideTemplateGallery();
+
+            // 复用创建弹窗（会先重置所有字段与上下文）
+            showCreateModal();
+            document.getElementById('agentName').value = (tpl.name || '新Agent') + '（副本）';
+            document.getElementById('agentDesc').value = tpl.desc || '';
+            document.getElementById('agentSystemPrompt').value = tpl.system_prompt || '';
+            document.getElementById('agentGreeting').value = tpl.greeting || '';
+            const tempEl = document.getElementById('agentTemperature');
+            if (tempEl) {
+                tempEl.value = (tpl.temperature != null) ? tpl.temperature : 0.7;
+                const tv = document.getElementById('agentTempValue');
+                if (tv) tv.textContent = Number(tempEl.value).toFixed(2);
+            }
+
+            // 按 code_path 解析工具并预选
+            try {
+                const [sysData, myData] = await Promise.all([
+                    apiRequest('/api/agent/tools?tool_type=system'),
+                    apiRequest('/api/agent/tools?tool_type=custom')
+                ]);
+                const allTools = (sysData.tools || []).concat(myData.tools || []);
+                const wanted = tpl.tool_code_paths || [];
+                tempSelectedTools = allTools
+                    .filter(t => wanted.includes(t.code_path))
+                    .map(t => ({ id: t.id, name: t.name, desc: t.desc, tool_type: t.tool_type, code_path: t.code_path }));
+                updateSelectedToolsDisplay();
+            } catch (e) {
+                console.warn('模板工具解析失败，可手动补齐:', e);
+            }
+
+            // 工具级配置（如 knowledge_search 检索策略）
+            tempToolConfigs = tpl.tool_configs || {};
+
+            if (tpl.kb_hint) {
+                showToast(tpl.kb_hint, 'info');
+            }
+        }
+
+        // 删除Agent
+        async function deleteAgent(agentId) {
+            if (!confirm('确定要删除这个Agent吗？')) return;
+
+            try {
+                await apiRequest(`/api/agent/agents/${agentId}`, { method: 'DELETE' });
+                showToast('Agent已删除', 'success');
+                loadAgents();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        // 打开Agent（跳转到对话）
+        function openAgent(agentId) {
+            window.location.href = `/front/?agent_id=${agentId}`;
+        }
+
+        // ====== 工具选择 ======
+
+        async function showToolSelectModal() {
+            document.getElementById('toolSelectModal').style.display = 'flex';
+            document.getElementById('toolSearch').value = '';
+            currentToolTab = 'system';
+            document.getElementById('toolTabSystem').style.background = '#40E0D0';
+            document.getElementById('toolTabSystem').style.color = 'white';
+            document.getElementById('toolTabMy').style.background = 'white';
+            document.getElementById('toolTabMy').style.color = '#4b5563';
+            
+            try {
+                // 统一加载所有工具
+                const [systemData, myData] = await Promise.all([
+                    apiRequest('/api/agent/tools?tool_type=system'),
+                    apiRequest('/api/agent/tools?tool_type=custom')
+                ]);
+                allSystemTools = systemData.tools || [];
+                allMyTools = myData.tools || [];
+                renderToolList();
+            } catch (error) {
+                showToast('加载工具失败', 'error');
+                document.getElementById('toolList').innerHTML = '<div style="text-align:center; padding:40px; color:#9ca3af;">加载失败</div>';
+            }
+        }
+
+        function hideToolSelectModal() {
+            document.getElementById('toolSelectModal').style.display = 'none';
+        }
+
+        function switchToolTab(tab) {
+            currentToolTab = tab;
+            document.getElementById('toolTabSystem').style.background = tab === 'system' ? '#40E0D0' : 'white';
+            document.getElementById('toolTabSystem').style.color = tab === 'system' ? 'white' : '#4b5563';
+            document.getElementById('toolTabMy').style.background = tab === 'my' ? '#40E0D0' : 'white';
+            document.getElementById('toolTabMy').style.color = tab === 'my' ? 'white' : '#4b5563';
+            renderToolList();
+        }
+
+        function renderToolList() {
+            const searchKeyword = document.getElementById('toolSearch').value.trim().toLowerCase();
+            const tools = currentToolTab === 'system' ? allSystemTools : allMyTools;
+            const filtered = tools.filter(t => 
+                !searchKeyword || 
+                t.name.toLowerCase().includes(searchKeyword) || 
+                (t.desc && t.desc.toLowerCase().includes(searchKeyword))
+            );
+
+            const listEl = document.getElementById('toolList');
+            if (filtered.length === 0) {
+                listEl.innerHTML = '<div style="text-align:center; padding:40px; color:#9ca3af;">暂无工具</div>';
+                return;
+            }
+
+            listEl.innerHTML = filtered.map(tool => {
+                const isSelected = tempSelectedTools.some(t => t.id === tool.id);
+                return `
+                    <div onclick="toggleTool('${tool.id}', '${tool.name}', '${tool.desc || ''}', '${tool.tool_type}', '${tool.code_path || ''}')" 
+                         style="display:flex; align-items:center; gap:12px; padding:12px; border-radius:8px; cursor:pointer; transition:all 0.2s; background:${isSelected ? 'rgba(64,224,208,0.1)' : 'transparent'};"
+                         onmouseover="this.style.background='${isSelected ? 'rgba(64,224,208,0.15)' : '#f8f9fa'}'" 
+                         onmouseout="this.style.background='${isSelected ? 'rgba(64,224,208,0.1)' : 'transparent'}'">
+                        <div style="width:8px; height:8px; border-radius:50%; background:${isSelected ? '#40E0D0' : '#e8ecf1'};"></div>
+                        <div style="flex:1;">
+                            <div style="font-size:14px; font-weight:500; color:#1a1a2e; margin-bottom:2px;">${escapeHtml(tool.name)}</div>
+                            <div style="font-size:12px; color:#8892a0;">${escapeHtml(tool.desc || '暂无描述')}</div>
+                        </div>
+                        ${isSelected ? '<span style="color:#40E0D0; margin-right:4px; flex-shrink:0;">✓</span>' : '<span style="width:0; flex-shrink:0;"></span>'}
+                        <button onclick="event.stopPropagation(); openToolConfig('${tool.id}');" 
+                                title="配置工具参数"
+                                style="width:30px; height:30px; border-radius:6px; border:1px solid #e2e8f0; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:13px; font-weight:600; flex-shrink:0; opacity:0.7;"
+                                onmouseover="this.style.background='#f8fafc'; this.style.color='#64748b'; this.style.borderColor='#cbd5e1'; this.style.opacity='1';"
+                                onmouseout="this.style.background='transparent'; this.style.color='#94a3b8'; this.style.borderColor='#e2e8f0'; this.style.opacity='0.7';">···</button>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('selectedToolCount').textContent = tempSelectedTools.length;
+        }
+
+        function toggleTool(id, name, desc, type, codePath) {
+            const index = tempSelectedTools.findIndex(t => String(t.id) === String(id));
+            if (index >= 0) {
+                tempSelectedTools.splice(index, 1);
+            } else {
+                tempSelectedTools.push({ id: id, name, desc, tool_type: type, code_path: codePath });
+            }
+            renderToolList();
+        }
+
+        // 打开工具配置详情弹窗
+        function openToolConfig(toolId) {
+            const tool = [...allSystemTools, ...allMyTools].find(t => t.id === toolId);
+            if (!tool) return;
+            currentConfigTool = tool;
+            renderToolConfigContent();
+            document.getElementById('toolConfigModal').style.display = 'flex';
+        }
+
+        // 渲染工具配置详情内容
+        function renderToolConfigContent() {
+            const container = document.getElementById('toolConfigBody');
+            const tool = currentConfigTool;
+            const isKS = tool.code_path === 'knowledge_search' || (tool.name || '').includes('知识库查询');
+            let html = `
+                <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
+                    <div style="width:40px; height:40px; border-radius:10px; background:rgba(64,224,208,0.1); display:flex; align-items:center; justify-content:center; font-size:20px;">${tool.icon || '🧩'}</div>
+                    <div>
+                        <div style="font-size:16px; font-weight:600; color:#1a1a2e;">${escapeHtml(tool.name)}</div>
+                        <div style="font-size:13px; color:#8892a0;">${escapeHtml(tool.desc || '暂无描述')}</div>
+                    </div>
+                </div>
+            `;
+            if (isKS) {
+                const cfg = tempToolConfigs['knowledge_search'] || {};
+                const enableRewrite = cfg.enable_query_rewrite != null ? cfg.enable_query_rewrite : false;
+                html += `
+                    <div style="margin-bottom:16px;">
+                        <label style="display:block; font-size:13px; color:#4b5563; margin-bottom:6px;">返回数量 (top_k)</label>
+                        <input type="number" id="tcTopK" min="1" max="50" value="${cfg.top_k != null ? cfg.top_k : 5}" style="width:100%; padding:10px 12px; border:1px solid #e8ecf1; border-radius:8px; font-size:14px; outline:none;">
+                    </div>
+                    <div style="margin-bottom:16px;">
+                        <label style="display:block; font-size:13px; color:#4b5563; margin-bottom:6px;">相似度阈值</label>
+                        <input type="number" id="tcSimilarityThreshold" min="0" max="1" step="0.05" value="${cfg.similarity_threshold != null ? cfg.similarity_threshold : 0.0}" style="width:100%; padding:10px 12px; border:1px solid #e8ecf1; border-radius:8px; font-size:14px; outline:none;">
+                        <div style="font-size:11px; color:#8892a0; margin-top:4px; line-height:1.4;">0 不过滤；>0 只卡向量分（BM25 始终保留）。单位：余弦相似度（通常 0~0.6），建议 0~0.1</div>
+                    </div>
+                    <div style="margin-bottom:16px;">
+                        <label style="display:block; font-size:13px; color:#4b5563; margin-bottom:6px;">检索策略</label>
+                        <select id="tcStrategy" style="width:100%; padding:10px 12px; border:1px solid #e8ecf1; border-radius:8px; font-size:14px; outline:none;">
+                            <option value="hybrid" ${cfg.strategy === 'hybrid' ? 'selected' : ''}>混合检索</option>
+                            <option value="vector" ${cfg.strategy === 'vector' ? 'selected' : ''}>向量检索</option>
+                            <option value="bm25" ${cfg.strategy === 'bm25' ? 'selected' : ''}>关键字检索</option>
+                        </select>
+                    </div>
+                    <div style="margin-bottom:16px;">
+                        <label style="display:inline-flex; align-items:center; gap:8px; font-size:13px; color:#4b5563; cursor:pointer;">
+                            <input type="checkbox" id="tcUseRerank" ${cfg.use_rerank != null ? (cfg.use_rerank ? 'checked' : '') : 'checked'} style="width:16px; height:16px; cursor:pointer;">
+                            启用重排序 (Rerank) 精排
+                        </label>
+                    </div>
+                    <div style="padding:12px 14px; background:#f8fafc; border:1px solid #eef2f6; border-radius:10px;">
+                        <label style="display:inline-flex; align-items:center; gap:8px; font-size:13px; font-weight:500; color:#1a1a2e; cursor:pointer;">
+                            <input type="checkbox" id="tcEnableRewrite" ${enableRewrite ? 'checked' : ''} style="width:16px; height:16px; cursor:pointer;">
+                            启用 Query 改写
+                        </label>
+                        <div style="font-size:12px; color:#8892a0; line-height:1.6; margin-top:6px;">由系统智能选择改写方式（HyDE / 查询扩展 / 子问题分解），无需逐项调参，关闭则不产生额外开销。</div>
+                    </div>
+                `;
+            } else {
+                html += `
+                    <div style="text-align:center; padding:40px 20px; color:#9ca3af;">
+                        <div style="font-size:48px; margin-bottom:12px;">🛠️</div>
+                        <div style="font-size:14px;">该工具暂无额外配置项</div>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        }
+
+        // 保存工具配置到临时状态
+        function saveToolConfig() {
+            if (!currentConfigTool) return;
+            const codePath = currentConfigTool.code_path || currentConfigTool.name;
+            if (currentConfigTool.code_path === 'knowledge_search' || (currentConfigTool.name || '').includes('知识库查询')) {
+                const topK = parseInt(document.getElementById('tcTopK').value, 10) || 5;
+                const similarityThreshold = parseFloat(document.getElementById('tcSimilarityThreshold').value);
+                const strategy = document.getElementById('tcStrategy').value;
+                const useRerank = document.getElementById('tcUseRerank').checked;
+                const enableRewrite = document.getElementById('tcEnableRewrite') ? document.getElementById('tcEnableRewrite').checked : false;
+                tempToolConfigs[codePath] = { top_k: topK, similarity_threshold: isNaN(similarityThreshold) ? 0.0 : similarityThreshold, strategy, use_rerank: useRerank, enable_query_rewrite: enableRewrite };
+            }
+            showToast('配置已保存', 'success');
+            hideToolConfigModal();
+        }
+
+        function hideToolConfigModal() {
+            document.getElementById('toolConfigModal').style.display = 'none';
+            currentConfigTool = null;
+        }
+
+        function filterToolList() {
+            renderToolList();
+        }
+
+        function confirmToolSelection() {
+            updateSelectedToolsDisplay();
+            hideToolSelectModal();
+        }
+
+        function updateSelectedToolsDisplay() {
+            const container = document.getElementById('selectedTools');
+            const placeholder = document.getElementById('toolsPlaceholder');
+
+            if (tempSelectedTools.length === 0) {
+                placeholder.style.display = 'block';
+                container.querySelectorAll('.selected-tool-tag').forEach(el => el.remove());
+            } else {
+                placeholder.style.display = 'none';
+                container.querySelectorAll('.selected-tool-tag').forEach(el => el.remove());
+                const fragment = document.createDocumentFragment();
+                tempSelectedTools.forEach(t => {
+                    const span = document.createElement('span');
+                    span.className = 'selected-tool-tag';
+                    span.style.cssText = 'display:inline-block; padding:4px 10px; margin:4px; background:linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%); color:white; border-radius:16px; font-size:12px;';
+                    span.textContent = t.name;
+                    fragment.appendChild(span);
+                });
+                container.appendChild(fragment);
+            }
+        }
+
+        // ====== 知识库选择 ======
+
+        async function showKBSelectModal() {
+            document.getElementById('kbSelectModal').style.display = 'flex';
+            document.getElementById('kbSearch').value = '';
+            currentFolderId = null;
+            currentFolderPath = [];
+            document.getElementById('kbSelectAll').checked = false;
+            
+            await loadKBTree();
+            renderSelectedKBList();
+        }
+
+        async function loadKBTree() {
+            try {
+                const url = currentFolderId 
+                    ? `/api/agent/kb-tree?folder_id=${currentFolderId}`
+                    : '/api/agent/kb-tree';
+                const data = await apiRequest(url);
+                
+                currentSubfolders = data.subfolders || [];
+                currentFolderKBs = data.knowledge_bases || [];
+                currentFolderPath = data.path || [];
+                
+                allKBs = currentFolderKBs;  // 保留兼容
+                
+                renderPathNav();
+                renderKBList();
+            } catch (error) {
+                showToast('加载知识库失败', 'error');
+                document.getElementById('kbList').innerHTML = '<div style="text-align:center; padding:40px; color:#9ca3af;">加载失败</div>';
+            }
+        }
+
+        function renderPathNav() {
+            const container = document.getElementById('kbPathNavContainer');
+            
+            let html = '';
+            // 根目录
+            html += `<span onclick="navigateToFolder(null)" style="cursor:pointer; color:${currentFolderId === null ? '#1a1a2e' : '#64748b'}; font-weight:${currentFolderId === null ? '600' : 'normal'}; padding:2px 4px; border-radius:4px;" onmouseover="this.style.background='#f0f2f5'" onmouseout="this.style.background='transparent'">📁 根目录</span>`;
+            
+            // 路径中间部分
+            currentFolderPath.forEach((folder, index) => {
+                html += `<span style="color:#9ca3af;">/</span>`;
+                const isLast = index === currentFolderPath.length - 1;
+                html += `<span onclick="navigateToFolder('${folder.id}')" style="cursor:pointer; color:${isLast ? '#1a1a2e' : '#64748b'}; font-weight:${isLast ? '600' : 'normal'}; padding:2px 4px; border-radius:4px;" onmouseover="this.style.background='#f0f2f5'" onmouseout="this.style.background='transparent'">${escapeHtml(folder.name)}</span>`;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        function navigateToFolder(folderId) {
+            currentFolderId = folderId;
+            document.getElementById('kbSearch').value = '';
+            loadKBTree();
+        }
+
+        function hideKBSelectModal() {
+            document.getElementById('kbSelectModal').style.display = 'none';
+        }
+
+        function renderKBList() {
+            const searchKeyword = document.getElementById('kbSearch').value.trim().toLowerCase();
+            
+            // 过滤当前文件夹下的知识库
+            let filteredKBs = currentFolderKBs.filter(kb => 
+                !searchKeyword || kb.name.toLowerCase().includes(searchKeyword)
+            );
+            
+            // 过滤子文件夹
+            let filteredFolders = currentSubfolders.filter(folder =>
+                !searchKeyword || folder.name.toLowerCase().includes(searchKeyword)
+            );
+            
+            const listEl = document.getElementById('kbList');
+            
+            // 如果有搜索关键词，显示搜索结果（跨文件夹）
+            if (searchKeyword) {
+                // 搜索所有知识库（包括其他文件夹的）
+                const allFilteredKBs = allKBs.filter(kb => 
+                    kb.name.toLowerCase().includes(searchKeyword)
+                );
+                
+                if (filteredFolders.length === 0 && allFilteredKBs.length === 0) {
+                    listEl.innerHTML = '<div style="text-align:center; padding:40px; color:#9ca3af;">没有找到匹配的结果</div>';
+                    updateSelectAllState();
+                    return;
+                }
+                
+                let html = '';
+                // 显示匹配的文件夹
+                if (filteredFolders.length > 0) {
+                    html += '<div style="font-size:12px; color:#9ca3af; padding:8px 4px 4px;">文件夹</div>';
+                    html += filteredFolders.map(folder => renderFolderItem(folder)).join('');
+                }
+                // 显示匹配的知识库
+                if (filteredKBs.length > 0) {
+                    if (filteredFolders.length > 0) html += '<div style="height:8px;"></div>';
+                    html += '<div style="font-size:12px; color:#9ca3af; padding:8px 4px 4px;">知识库</div>';
+                    html += filteredKBs.map(kb => renderKBItem(kb)).join('');
+                }
+                
+                listEl.innerHTML = html;
+            } else {
+                // 正常显示：子文件夹 + 知识库
+                if (currentSubfolders.length === 0 && currentFolderKBs.length === 0) {
+                    listEl.innerHTML = '<div style="text-align:center; padding:60px 20px; color:#9ca3af;"><div style="font-size:48px; margin-bottom:12px;">📂</div><div style="font-size:14px;">这个目录已经没有东西可选了~</div></div>';
+                    updateSelectAllState();
+                    return;
+                }
+                
+                let html = '';
+                // 子文件夹
+                if (currentSubfolders.length > 0) {
+                    html += currentSubfolders.map(folder => renderFolderItem(folder)).join('');
+                }
+                // 知识库
+                if (currentFolderKBs.length > 0) {
+                    if (currentSubfolders.length > 0) html += '<div style="height:8px;"></div>';
+                    html += currentFolderKBs.map(kb => renderKBItem(kb)).join('');
+                }
+                
+                listEl.innerHTML = html;
+            }
+
+            updateSelectedCount();
+            updateSelectAllState();
+        }
+
+        function renderFolderItem(folder) {
+            return `
+                <div onclick="navigateToFolder('${folder.id}')" 
+                     style="display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:8px; cursor:pointer; transition:all 0.15s; margin-bottom:4px;"
+                     onmouseover="this.style.background='#f0f2f5'" 
+                     onmouseout="this.style.background='transparent'">
+                    <div style="width:32px; height:32px; background:#FEF3C7; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                        <span style="font-size:16px;">📁</span>
+                    </div>
+                    <div style="flex:1; min-width:0;">
+                        <div style="display:flex; align-items:center; gap:6px; margin-bottom:2px;">
+                            <span style="font-size:14px; font-weight:500; color:#1a1a2e; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(folder.name)}</span>
+                        </div>
+                        <div style="font-size:12px; color:#8892a0;">📚 ${folder.kb_count || 0} 个知识库</div>
+                    </div>
+                    <span style="color:#9ca3af; font-size:16px;">›</span>
+                </div>
+            `;
+        }
+
+        function renderKBItem(kb) {
+            const isSelected = tempSelectedKBs.some(k => k.id === kb.id);
+            return `
+                <div onclick="toggleKB('${kb.id}', '${kb.name}', '${kb.embedding_model || ''}')" 
+                     style="display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:8px; cursor:pointer; transition:all 0.15s; background:${isSelected ? 'rgba(64,224,208,0.1)' : 'transparent'}; margin-bottom:4px;"
+                     onmouseover="this.style.background='${isSelected ? 'rgba(64,224,208,0.15)' : '#f0f2f5'}'" 
+                     onmouseout="this.style.background='${isSelected ? 'rgba(64,224,208,0.1)' : 'transparent'}'">
+                    <div style="width:32px; height:32px; background:rgba(64,224,208,0.1); border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                        <span style="font-size:16px;">📚</span>
+                    </div>
+                    <div style="flex:1; min-width:0;">
+                        <div style="display:flex; align-items:center; gap:6px; margin-bottom:2px;">
+                            <span style="font-size:14px; font-weight:500; color:#1a1a2e; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(kb.name)}</span>
+                        </div>
+                        <div style="font-size:12px; color:#8892a0; display:flex; gap:12px;">
+                            <span>📄 ${kb.doc_count || 0} 个文档</span>
+                            ${kb.embedding_model ? `<span>🔑 ${escapeHtml(kb.embedding_model)}</span>` : ''}
+                        </div>
+                    </div>
+                    ${isSelected ? '<span style="color:#40E0D0; font-size:18px;">✓</span>' : ''}
+                </div>
+            `;
+        }
+
+        function renderSelectedKBList() {
+            const listEl = document.getElementById('selectedKBList');
+            
+            if (tempSelectedKBs.length === 0) {
+                listEl.innerHTML = `
+                    <div style="text-align:center; padding:60px 20px; color:#9ca3af;">
+                        <div style="font-size:48px; margin-bottom:12px;">📚</div>
+                        <div style="font-size:14px;">从左侧选择知识库</div>
+                    </div>
+                `;
+            } else {
+                listEl.innerHTML = tempSelectedKBs.map(kb => `
+                    <div style="display:flex; align-items:center; gap:10px; padding:10px 12px; background:white; border-radius:8px; margin-bottom:8px; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                        <span style="font-size:18px;">📚</span>
+                        <div style="flex:1; min-width:0;">
+                            <div style="font-size:13px; font-weight:500; color:#1a1a2e; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(kb.name)}</div>
+                        </div>
+                        <button onclick="removeSelectedKB('${kb.id}')" style="border:none; background:transparent; cursor:pointer; color:#9ca3af; font-size:18px; width:24px; height:24px; display:flex; align-items:center; justify-content:center; border-radius:4px;" onmouseover="this.style.background='#fee2e2'; this.style.color='#ef4444'" onmouseout="this.style.background='transparent'; this.style.color='#9ca3af'">×</button>
+                    </div>
+                `).join('');
+            }
+            
+            updateSelectedCount();
+        }
+
+        function updateSelectedCount() {
+            document.getElementById('selectedKBCount').textContent = tempSelectedKBs.length;
+        }
+
+        function updateSelectAllState() {
+            const searchKeyword = document.getElementById('kbSearch').value.trim().toLowerCase();
+            let filtered;
+            if (searchKeyword) {
+                filtered = currentFolderKBs.filter(kb => 
+                    kb.name.toLowerCase().includes(searchKeyword)
+                );
+            } else {
+                filtered = currentFolderKBs;
+            }
+            const allSelected = filtered.length > 0 && filtered.every(kb => 
+                tempSelectedKBs.some(k => k.id === kb.id)
+            );
+            document.getElementById('kbSelectAll').checked = allSelected;
+        }
+
+        function toggleSelectAll(checked) {
+            const searchKeyword = document.getElementById('kbSearch').value.trim().toLowerCase();
+            let filtered;
+            if (searchKeyword) {
+                filtered = currentFolderKBs.filter(kb => 
+                    kb.name.toLowerCase().includes(searchKeyword)
+                );
+            } else {
+                filtered = currentFolderKBs;
+            }
+            
+            if (checked) {
+                filtered.forEach(kb => {
+                    if (!tempSelectedKBs.some(k => k.id === kb.id)) {
+                        tempSelectedKBs.push({ id: kb.id, name: kb.name, embedding_model: kb.embedding_model || '' });
+                    }
+                });
+            } else {
+                const idsToRemove = filtered.map(k => k.id);
+                tempSelectedKBs = tempSelectedKBs.filter(k => !idsToRemove.includes(k.id));
+            }
+            
+            renderKBList();
+            renderSelectedKBList();
+        }
+
+        function toggleKB(id, name, embeddingModel = '') {
+            const index = tempSelectedKBs.findIndex(k => k.id === id);
+            if (index >= 0) {
+                tempSelectedKBs.splice(index, 1);
+            } else {
+                tempSelectedKBs.push({ id, name, embedding_model: embeddingModel });
+            }
+            renderKBList();
+            renderSelectedKBList();
+        }
+
+        function removeSelectedKB(id) {
+            const index = tempSelectedKBs.findIndex(k => k.id === id);
+            if (index >= 0) {
+                tempSelectedKBs.splice(index, 1);
+            }
+            renderKBList();
+            renderSelectedKBList();
+        }
+
+        function filterKBList() {
+            renderKBList();
+        }
+
+        function confirmKBSelection() {
+            updateSelectedKBsDisplay();
+            hideKBSelectModal();
+        }
+
+        function updateSelectedKBsDisplay() {
+            const container = document.getElementById('selectedKBs');
+            const placeholder = document.getElementById('kbsPlaceholder');
+
+            if (tempSelectedKBs.length === 0) {
+                placeholder.style.display = 'block';
+                container.innerHTML = '';
+            } else {
+                placeholder.style.display = 'none';
+                container.innerHTML = tempSelectedKBs.map(k => 
+                    `<span style="display:inline-flex; align-items:center; padding:6px 12px; margin:4px; background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); color:white; border-radius:16px; font-size:12px; gap:4px;">📚 ${escapeHtml(k.name)}</span>`
+                ).join('');
+            }
+        }
+
+        // 编辑Agent：拉取详情并预填弹窗（含工具/知识库与检索参数配置）
+        async function editAgent(agentId) {
+            try {
+                const detail = await apiRequest(`/api/agent/agents/${agentId}?_t=${Date.now()}`);
+
+                // 构建 工具ID->工具信息、知识库ID->知识库名称 的映射，用于回显
+                const [sysData, myData, kbData] = await Promise.all([
+                    apiRequest('/api/agent/tools?tool_type=system'),
+                    apiRequest('/api/agent/tools?tool_type=custom'),
+                    apiRequest('/api/agent/knowledge-bases')
+                ]);
+                const toolMap = {};
+                [...(sysData.tools || []), ...(myData.tools || [])].forEach(t => { toolMap[t.id] = t; });
+                const kbMap = {};
+                (kbData.knowledge_bases || []).forEach(k => { kbMap[k.id] = k; });
+
+                editingAgentId = agentId;
+                document.getElementById('agentName').value = detail.name || '';
+                const avatar = detail.avatar || '🤖';
+                document.getElementById('agentAvatar').value = avatar;
+                updateAgentAvatarPreview();
+                document.getElementById('agentSystemPrompt').value = detail.system_prompt || '';
+                document.getElementById('agentDesc').value = detail.desc || '';
+                document.getElementById('agentGreeting').value = detail.greeting || '';
+
+                tempSelectedTools = (detail.tool_ids || []).map(id => {
+                    const t = toolMap[id];
+                    return {
+                        id,
+                        name: t ? t.name : id,
+                        desc: t ? t.desc : '',
+                        tool_type: t ? t.tool_type : 'system',
+                        code_path: t ? t.code_path : ''
+                    };
+                });
+                tempSelectedKBs = (detail.kb_ids || []).map(id => {
+                    const k = kbMap[id];
+                    return { id, name: k ? k.name : id };
+                });
+
+                // 回显工具级配置
+                tempToolConfigs = detail.tool_configs || {};
+
+                updateSelectedToolsDisplay();
+                updateSelectedKBsDisplay();
+                document.getElementById('createModal').style.display = 'flex';
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }
+
+        // 工具函数
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text || '';
+            return div.innerHTML;
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            loadAgents();
+        });
+    </script>
+</body>
+</html>

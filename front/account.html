@@ -123,6 +123,13 @@
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
+            overflow: hidden;
+        }
+
+        .sidebar-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         /* ===== 账号子导航 ===== */
@@ -532,7 +539,7 @@
             to { opacity: 1; transform: translateX(0); }
         }
     </style>
-    <script src="/front/js/auth.js?v=20260801"></script>
+    <script src="/front/js/auth.js?v=20260812"></script>
 </head>
 <body>
     <div class="app-container">
@@ -761,6 +768,22 @@
             await loadUserInfo();
         });
 
+        let currentAvatarUrl = '';
+
+        function renderAvatarPreview(url, fallbackText) {
+            const avatarPreview = document.getElementById('avatarPreview');
+            const sidebarAvatar = document.getElementById('sidebarAvatar');
+            if (url) {
+                const html = '<img src="' + url + '" alt="avatar">';
+                avatarPreview.innerHTML = html;
+                sidebarAvatar.innerHTML = html;
+            } else {
+                const text = fallbackText ? fallbackText.charAt(0).toUpperCase() : 'U';
+                avatarPreview.innerHTML = '<span>' + text + '</span>';
+                sidebarAvatar.textContent = text;
+            }
+        }
+
         async function loadUserInfo() {
             try {
                 const res = await Auth.fetch('/api/auth/get_user_info');
@@ -788,17 +811,13 @@
                 }
 
                 // 更新头像
-                const avatarEl = document.getElementById('sidebarAvatar');
+                currentAvatarUrl = data.avatar || '';
                 const nickname = data.nickname || data.username || '';
-                avatarEl.textContent = nickname ? nickname.charAt(0).toUpperCase() : 'U';
+                renderAvatarPreview(currentAvatarUrl, nickname);
 
-                // 头像预览
-                const avatarPreview = document.getElementById('avatarPreview');
-                if (data.avatar) {
-                    avatarPreview.innerHTML = '<img src="' + data.avatar + '" alt="avatar">';
-                } else {
-                    avatarPreview.innerHTML = '<span>' + (nickname ? nickname.charAt(0).toUpperCase() : 'U') + '</span>';
-                }
+                // 同步本地存储，确保切换到其他页面时头像仍有效
+                Auth.setUserInfo(data);
+                Auth.updateUserDisplay();
             } catch (error) {
                 console.error('加载用户信息失败:', error);
                 showToast('加载用户信息失败', 'error');
@@ -813,17 +832,44 @@
             document.getElementById(tab + '-page').classList.add('active');
         }
 
-        function handleAvatarUpload(event) {
+        async function handleAvatarUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
 
+            // 本地先预览
             const reader = new FileReader();
             reader.onload = function(e) {
                 const preview = document.getElementById('avatarPreview');
                 preview.innerHTML = '<img src="' + e.target.result + '" alt="avatar">';
-                showToast('头像上传成功', 'success');
             };
             reader.readAsDataURL(file);
+
+            // 上传到后端
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('old_url', (typeof currentAvatarUrl !== 'undefined' && currentAvatarUrl) ? currentAvatarUrl : '');
+            const token = localStorage.getItem('access_token') || '';
+            try {
+                const res = await fetch('/api/upload/avatar', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': token ? 'Bearer ' + token : ''
+                    },
+                    body: formData
+                });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.msg || '头像上传失败');
+                }
+                const data = await res.json();
+                currentAvatarUrl = data.url;
+                const nickname = document.getElementById('nicknameInput').value || '';
+                renderAvatarPreview(currentAvatarUrl, nickname);
+                showToast('头像上传成功，记得点击保存', 'success');
+            } catch (error) {
+                console.error('头像上传失败:', error);
+                showToast('头像上传失败：' + error.message, 'error');
+            }
         }
 
         async function saveAccountInfo() {
@@ -833,7 +879,8 @@
                 phone: document.getElementById('phoneInput').value,
                 team: document.getElementById('teamSelect').value,
                 department: document.getElementById('deptInput').value,
-                company: document.getElementById('companyInput').value
+                company: document.getElementById('companyInput').value,
+                avatar: currentAvatarUrl
             };
 
             try {
@@ -851,8 +898,11 @@
                     email: data.email,
                     phone: data.phone,
                     department: data.department,
-                    company: data.company
+                    company: data.company,
+                    avatar: currentAvatarUrl
                 });
+                const nickname = data.nickname || '';
+                renderAvatarPreview(currentAvatarUrl, nickname);
                 showToast('保存成功', 'success');
             } catch (error) {
                 showToast('保存失败：' + error.message, 'error');

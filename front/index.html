@@ -125,6 +125,7 @@
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
+            overflow: hidden;
         }
 
         /* ===== Agent 列表 ===== */
@@ -224,6 +225,65 @@
             justify-content: center;
             flex-shrink: 0;
             font-size: 18px;
+            overflow: hidden;
+        }
+
+        .agent-avatar img,
+        .header-agent-avatar img,
+        .message-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Agent 表单：点击圆形头像上传 */
+        .agent-avatar-upload-wrap {
+            position: relative;
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            overflow: hidden;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .agent-avatar-upload-preview {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%);
+            color: #fff;
+            font-size: 30px;
+            overflow: hidden;
+        }
+
+        .agent-avatar-upload-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .agent-avatar-upload-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+            line-height: 1.2;
+        }
+
+        .agent-avatar-upload-wrap:hover .agent-avatar-upload-overlay {
+            opacity: 1;
         }
 
         .agent-info {
@@ -347,7 +407,7 @@
 
         .nav-btn {
             padding: 8px 14px;
-            background: rgba(102,126,234,0.1);
+            background: rgba(102, 126, 234, 0.1);
             border: none;
             border-radius: 8px;
             color: #40E0D0;
@@ -358,7 +418,7 @@
         }
 
         .nav-btn:hover {
-            background: rgba(102,126,234,0.2);
+            background: rgba(102, 126, 234, 0.2);
         }
 
         .model-select-wrapper {
@@ -623,15 +683,260 @@
         }
 
         @keyframes typingBounce {
-            0%, 80%, 100% {
+
+            0%,
+            80%,
+            100% {
                 transform: translateY(0) scale(0.7);
                 opacity: 0.4;
             }
+
             40% {
                 transform: translateY(-4px) scale(1);
                 opacity: 1;
             }
         }
+
+        /* ===== 思考过程展示组件 ===== */
+        .thinking-process {
+            margin-bottom: 12px;
+            border: 1px solid #e8ecf1;
+            border-radius: 10px;
+            background: #f8f9fa;
+            overflow: hidden;
+        }
+
+        .thinking-process-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.15s;
+        }
+
+        .thinking-process-header:hover {
+            background: #eef1f5;
+        }
+
+        .thinking-process-title {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #64748b;
+        }
+
+        .thinking-process-title .thinking-icon {
+            font-size: 14px;
+        }
+
+        .thinking-process-title .thinking-count {
+            background: rgba(64, 224, 208, 0.15);
+            color: #0d9488;
+            padding: 1px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .thinking-process-toggle {
+            color: #8892a0;
+            font-size: 12px;
+            transition: transform 0.2s;
+        }
+
+        .thinking-process.expanded .thinking-process-toggle {
+            transform: rotate(90deg);
+        }
+
+        .thinking-process-body {
+            display: none;
+            padding: 8px 14px 12px;
+            border-top: 1px solid #e8ecf1;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .thinking-process.expanded .thinking-process-body {
+            display: block;
+        }
+
+        .thinking-step {
+            padding: 8px 0;
+            font-size: 13px;
+            line-height: 1.6;
+            border-bottom: 1px dashed #e8ecf1;
+        }
+
+        .thinking-step:last-child {
+            border-bottom: none;
+        }
+
+        .thinking-step-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+
+        .thinking-step-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .thinking-step-badge.thinking {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+        }
+
+        .thinking-step-badge.tool_result {
+            background: rgba(64, 224, 208, 0.1);
+            color: #0d9488;
+        }
+
+        .thinking-step-badge.thought {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+        }
+
+        .thinking-step-badge.action {
+            background: rgba(245, 158, 11, 0.12);
+            color: #b45309;
+        }
+
+        .thinking-step-badge.observation {
+            background: rgba(64, 224, 208, 0.1);
+            color: #0d9488;
+        }
+
+        .thinking-step-badge.final {
+            background: rgba(34, 197, 94, 0.12);
+            color: #15803d;
+        }
+
+        .thinking-step-badge .step-num {
+            color: #8892a0;
+            font-weight: 400;
+        }
+
+        .thinking-step-content {
+            color: #4a5568;
+            font-size: 13px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .thinking-step-content.tool-result {
+            background: #f1f5f9;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #64748b;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+
+        .thinking-step-content .tool-name {
+            font-weight: 600;
+            color: #0d9488;
+        }
+
+        /* 思考中占位动画 */
+        .thinking-step-pending {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 0;
+            color: #8892a0;
+            font-size: 12px;
+        }
+        .thinking-step-pending .pulse {
+            width: 6px;
+            height: 6px;
+            background: #667eea;
+            border-radius: 50%;
+            animation: pulse-dot 1.4s infinite ease-in-out both;
+        }
+        .thinking-step-pending .pulse:nth-child(2) { animation-delay: 0.2s; }
+        .thinking-step-pending .pulse:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes pulse-dot {
+            0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        /* 思考过程空状态动画 */
+        .thinking-body-pending {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 24px 14px;
+            color: #64748b;
+            font-size: 13px;
+        }
+        .thinking-body-pending .thinking-brain {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #40E0D0 0%, #667eea 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            animation: thinking-brain-pulse 1.6s infinite ease-in-out;
+        }
+        .thinking-body-pending .thinking-dots {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .thinking-body-pending .thinking-dots span {
+            width: 6px;
+            height: 6px;
+            background: #667eea;
+            border-radius: 50%;
+            animation: thinking-dot-bounce 1.4s infinite ease-in-out both;
+        }
+        .thinking-body-pending .thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .thinking-body-pending .thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes thinking-brain-pulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(64, 224, 208, 0.4); }
+            50% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(64, 224, 208, 0); }
+        }
+        @keyframes thinking-dot-bounce {
+            0%, 80%, 100% { transform: translateY(0); opacity: 0.5; }
+            40% { transform: translateY(-5px); opacity: 1; }
+        }
+
+        /* 思考持续中提示（有步骤时显示在底部） */
+        .thinking-step-pending-inline {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 0 4px;
+            color: #64748b;
+            font-size: 12px;
+            border-top: 1px dashed #e8ecf1;
+            margin-top: 4px;
+        }
+        .thinking-step-pending-inline .dot {
+            width: 5px;
+            height: 5px;
+            background: #667eea;
+            border-radius: 50%;
+            animation: thinking-dot-bounce 1.4s infinite ease-in-out both;
+        }
+        .thinking-step-pending-inline .dot:nth-child(2) { animation-delay: 0.2s; }
+        .thinking-step-pending-inline .dot:nth-child(3) { animation-delay: 0.4s; }
 
         .input-area {
             padding: 16px 20px 20px;
@@ -702,8 +1007,46 @@
             width: 20px;
             height: 20px;
         }
+
+        .stop-btn {
+            width: 46px;
+            height: 46px;
+            border: none;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+            color: white;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+            animation: stopPulse 1.4s ease-in-out infinite;
+        }
+
+        .stop-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+        }
+
+        .stop-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        @keyframes stopPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.35); }
+            50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+        }
+
+        /* 生成中（in_progress）输入框视觉提示 */
+        .input-field.streaming {
+            border-color: #f59e0b;
+            background: #fffdf5;
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.12);
+        }
     </style>
-    <script src="/front/js/auth.js?v=20260801"></script>
+    <script src="/front/js/auth.js?v=20260812"></script>
 </head>
 
 <body>
@@ -711,7 +1054,8 @@
         <!-- 侧边栏 -->
         <div class="sidebar">
             <div class="sidebar-logo">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
                     <rect x="3" y="11" width="18" height="10" rx="2"></rect>
                     <circle cx="12" cy="5" r="2"></circle>
                     <path d="M12 7v4"></path>
@@ -719,20 +1063,23 @@
             </div>
             <div class="sidebar-nav">
                 <div class="sidebar-item active">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
                         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                     </svg>
                     <span class="tooltip">对话</span>
                 </div>
                 <div class="sidebar-item" onclick="location.href='/front/knowledge.html'">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
                         <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
                         <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
                     </svg>
                     <span class="tooltip">知识库</span>
                 </div>
                 <div class="sidebar-item" onclick="location.href='/front/workbench.html'">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
                         <rect x="3" y="3" width="7" height="7"></rect>
                         <rect x="14" y="3" width="7" height="7"></rect>
                         <rect x="14" y="14" width="7" height="7"></rect>
@@ -741,7 +1088,8 @@
                     <span class="tooltip">工作台</span>
                 </div>
                 <div class="sidebar-item" onclick="location.href='/front/account.html'">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
                         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                         <circle cx="12" cy="7" r="4"></circle>
                     </svg>
@@ -750,7 +1098,8 @@
             </div>
             <div class="sidebar-bottom">
                 <div class="sidebar-item">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
                         <circle cx="12" cy="12" r="10"></circle>
                         <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
                         <line x1="12" y1="17" x2="12.01" y2="17"></line>
@@ -765,48 +1114,37 @@
         <div class="agent-panel" id="agentPanel">
             <div class="agent-panel-header">
                 <span class="agent-panel-title">Agent 列表</span>
-                <button class="new-agent-btn" onclick="addNewAgent()">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                </button>
+                <div style="display:flex; gap:8px;">
+                    <button class="new-agent-btn" title="从模板创建" onclick="openTemplateGallery()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round">
+                            <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+                            <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+                            <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+                            <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+                        </svg>
+                    </button>
+                    <button class="new-agent-btn" onclick="addNewAgent()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                    </button>
+                </div>
             </div>
             <div class="agent-list" id="agentList">
-                <div class="agent-item active" onclick="selectAgent(this, 0)">
-                    <div class="agent-avatar" style="background: linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%);">🤖</div>
-                    <div class="agent-info">
-                        <div class="agent-name">通用助手</div>
-                        <div class="agent-desc">智能对话，有问必答</div>
-                    </div>
-                </div>
-                <div class="agent-item" onclick="selectAgent(this, 1)">
-                    <div class="agent-avatar" style="background: linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%);">📚</div>
-                    <div class="agent-info">
-                        <div class="agent-name">知识库助手</div>
-                        <div class="agent-desc">基于知识库的问答</div>
-                    </div>
-                </div>
-                <div class="agent-item" onclick="selectAgent(this, 2)">
-                    <div class="agent-avatar" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">🔧</div>
-                    <div class="agent-info">
-                        <div class="agent-name">工具专家</div>
-                        <div class="agent-desc">调用工具解决问题</div>
-                    </div>
-                </div>
-                <div class="agent-item" onclick="selectAgent(this, 3)">
-                    <div class="agent-avatar" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">💻</div>
-                    <div class="agent-info">
-                        <div class="agent-name">代码助手</div>
-                        <div class="agent-desc">编程与技术咨询</div>
-                    </div>
+                <div
+                    style="display:flex; justify-content:center; align-items:center; padding:40px; color:#8892a0; font-size:13px;">
+                    加载中...
                 </div>
             </div>
         </div>
 
         <!-- 折叠按钮 -->
         <div class="toggle-btn" id="toggleBtn" onclick="toggleAgentPanel()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
                 <polyline points="15 18 9 12 15 6"></polyline>
             </svg>
         </div>
@@ -839,9 +1177,15 @@
                 <div class="input-wrapper">
                     <textarea class="input-field" id="input" placeholder="输入消息，按 Enter 发送..." rows="1"></textarea>
                     <button class="send-btn" id="sendBtn">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
                             <line x1="22" y1="2" x2="11" y2="13"></line>
                             <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </button>
+                    <button class="stop-btn" id="stopBtn" style="display:none;" title="停止生成">
+                        <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                            <rect x="6" y="6" width="12" height="12" rx="2"></rect>
                         </svg>
                     </button>
                 </div>
@@ -857,28 +1201,200 @@
         const agentPanel = document.getElementById("agentPanel");
         const toggleBtn = document.getElementById("toggleBtn");
 
-        const agents = [
-            { name: "通用助手", desc: "智能对话，有问必答", emoji: "🤖", gradient: "linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%)" },
-            { name: "知识库助手", desc: "基于知识库的问答", emoji: "📚", gradient: "linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%)" },
-            { name: "工具专家", desc: "调用工具解决问题", emoji: "🔧", gradient: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)" },
-            { name: "代码助手", desc: "编程与技术咨询", emoji: "💻", gradient: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)" }
-        ];
-
-        let currentAgentIndex = 0;
+        // 从后端动态加载的Agent列表
+        let agents = [];
+        let currentAgentId = null;
         let agentCollapsed = false;
+
+        // 流式生成状态（并发锁 + 中止控制 + 切页缓存）
+        let isStreaming = false;                            // 是否正在生成（并发锁）
+        let abortController = null;                         // 当前请求的 AbortController
+        let currentReader = null;                           // 当前流式 reader（用于中止）
+        let currentSessionId = null;                        // 当前会话 ID（用于消息缓存）
+        // 切页消息缓存：sessionId -> messagesContainer.innerHTML
+        // 改用本地存储，使缓存跨页面切换 / 刷新浏览器后依然存活（不再随单页 DOM 销毁而丢失）
+        function getSessionCache(sessionId) {
+            try { return localStorage.getItem('rag_chat_cache::' + sessionId); } catch (e) { return null; }
+        }
+        function setSessionCache(sessionId, html) {
+            try { localStorage.setItem('rag_chat_cache::' + sessionId, html); } catch (e) { /* 配额超限等，忽略 */ }
+        }
+        
+        // 分页加载历史消息的状态
+        let historyPage = 0;          // 当前已加载的页数（0=最新一页）
+        let historyHasMore = false;   // 是否有更早的历史
+        let historyTotalPages = 0;    // 总页数
+        let isLoadingHistory = false; // 是否正在加载历史（防止重复请求）
+        const HISTORY_PAGE_SIZE = 5;  // 每页轮数（每轮=user+ai）
+
+        // 加载Agent列表 - 使用Auth.fetch统一处理认证
+        async function loadAgents() {
+            try {
+                const res = await Auth.fetch(`/api/agent/agents?_t=${Date.now()}`);
+                const data = await res.json();
+                agents = data.agents || [];
+
+                if (agents.length === 0) {
+                    document.getElementById('agentList').innerHTML = `
+                        <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; padding:40px 20px; color:#8892a0; font-size:13px; gap:8px;">
+                            <div style="font-size:36px;">🤖</div>
+                            <div>暂无Agent</div>
+                            <div style="font-size:12px;">点击右上角 + 创建新Agent</div>
+                        </div>
+                    `;
+                    // 空状态时头部不显示Agent信息
+                    document.getElementById('currentAgentName').textContent = '创建Agent开始对话';
+                    document.getElementById('currentAgentDesc').textContent = '';
+                    messagesContainer.innerHTML = '';
+                    return;
+                }
+
+                // 默认选中上次使用的 Agent（跨页面/刷新后保持一致），否则选中第一个
+                let preferredAgentId = currentAgentId;
+                if (!preferredAgentId) {
+                    try { preferredAgentId = localStorage.getItem('rag_current_agent') || null; } catch (e) { preferredAgentId = null; }
+                }
+                if (preferredAgentId && agents.some(a => a.id === preferredAgentId)) {
+                    await selectAgent(preferredAgentId);
+                } else if (agents.length > 0) {
+                    await selectAgent(agents[0].id);
+                } else {
+                    renderAgentList();
+                    updateHeaderAgent();
+                }
+            } catch (error) {
+                console.error('加载Agent失败:', error);
+                // Auth.fetch已处理登录过期跳转，这里静默失败
+            }
+        }
+
+        function renderAgentAvatarContent(avatar, defaultEmoji) {
+            if (!avatar) avatar = defaultEmoji || '🤖';
+            if (/^https?:\/\//.test(avatar) || avatar.startsWith('/uploads/')) {
+                var fallback = defaultEmoji || '🤖';
+                return '<img src="' + avatar + '" alt="avatar" onerror="var span=document.createElement(\'span\');span.textContent=\'' + fallback + '\';var p=this.parentNode;p.replaceChild(span,this);p.style.background=\'linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%)\';">';
+            }
+            return '<span>' + avatar + '</span>';
+        }
+
+        // 渲染Agent列表
+        function renderAgentList() {
+            const list = document.getElementById('agentList');
+            if (agents.length === 0) return;
+
+            list.innerHTML = agents.map(agent => {
+                const isActive = agent.id === currentAgentId;
+                const gradient = getAgentGradient(agent.id);
+                const avatarHtml = renderAgentAvatarContent(agent.avatar, '🤖');
+                const desc = agent.desc || '暂无描述';
+
+                return `
+                    <div class="agent-item${isActive ? ' active' : ''}">
+                        <div class="agent-item-main" onclick="selectAgent('${agent.id}')" style="flex:1; display:flex; align-items:center; gap:12px; cursor:pointer;">
+                            <div class="agent-avatar" style="background: ${gradient};">${avatarHtml}</div>
+                            <div class="agent-info">
+                                <div class="agent-name">${escapeHtml(agent.name)}</div>
+                                <div class="agent-desc">${escapeHtml(desc)}</div>
+                            </div>
+                        </div>
+                        <div class="agent-more-btn" onclick="event.stopPropagation(); showEditAgentModal('${agent.id}')" style="padding:8px; border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#9ca3af; transition:all 0.2s;" onmouseover="this.style.background='rgba(0,0,0,0.05)'; this.style.color='#666'" onmouseout="this.style.background='transparent'; this.style.color='#9ca3af'">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="1"></circle>
+                                <circle cx="12" cy="5" r="1"></circle>
+                                <circle cx="12" cy="19" r="1"></circle>
+                            </svg>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 根据Agent ID获取渐变色
+        function getAgentGradient(id) {
+            const gradients = [
+                'linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%)',
+                'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+                'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+                'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+                'linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)',
+                'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+            ];
+            let hash = 0;
+            for (let i = 0; i < id.length; i++) {
+                hash = id.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            return gradients[Math.abs(hash) % gradients.length];
+        }
+
+        // 更新聊天头部Agent信息
+        function updateHeaderAgent() {
+            const agent = agents.find(a => a.id === currentAgentId);
+            const avatarEl = document.querySelector('.header-agent-avatar');
+            if (!agent) {
+                avatarEl.innerHTML = '🤖';
+                avatarEl.style.background = 'linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%)';
+                return;
+            }
+
+            const gradient = getAgentGradient(agent.id);
+            document.getElementById('currentAgentName').textContent = agent.name;
+            document.getElementById('currentAgentDesc').textContent = agent.desc || '暂无描述';
+            avatarEl.innerHTML = renderAgentAvatarContent(agent.avatar, '🤖');
+            avatarEl.style.background = gradient;
+        }
+
+        // HTML转义
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text || '';
+            return div.innerHTML;
+        }
 
         sendBtn.addEventListener('click', sendMessage);
 
-        input.addEventListener("keydown", function(e) {
+        // 中止生成：取消当前请求并停止读取流
+        stopBtn.addEventListener('click', function () {
+            if (abortController) abortController.abort();
+            if (currentReader) {
+                try { currentReader.cancel(); } catch (e) { /* ignore */ }
+            }
+        });
+
+        input.addEventListener("keydown", function (e) {
             if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
                 sendMessage();
             }
         });
 
-        input.addEventListener("input", function() {
+        input.addEventListener("input", function () {
             this.style.height = "auto";
             this.style.height = Math.min(this.scrollHeight, 120) + "px";
+        });
+
+        // 向上滚动加载更多历史消息
+        messagesContainer.addEventListener('scroll', function () {
+            // 当滚动到顶部时，加载更早的历史
+            if (messagesContainer.scrollTop <= 50) {
+                loadMoreHistory();
+            }
+        });
+
+        // 跨页面切换（如跳到知识库页）前，把当前聊天 DOM 持久化到本地存储，
+        // 这样即使流式生成进行中也能在返回时恢复（含部分结果）。
+        window.addEventListener('pagehide', function () {
+            if (!currentSessionId) return;
+            try {
+                if (isStreaming) {
+                    const indicator = messagesContainer.querySelector('.typing-indicator');
+                    if (indicator) {
+                        indicator.outerHTML = '<div style="color:#f59e0b;font-size:12px;margin-top:6px;">⚠ 生成已在切换页面时中断，可重新发送</div>';
+                    }
+                }
+                setSessionCache(currentSessionId, messagesContainer.innerHTML);
+            } catch (e) { /* 忽略持久化异常 */ }
         });
 
         function toggleAgentPanel() {
@@ -892,57 +1408,190 @@
             }
         }
 
-        function selectAgent(el, index) {
-            document.querySelectorAll(".agent-item").forEach(item => item.classList.remove("active"));
-            el.classList.add("active");
-            currentAgentIndex = index;
+        // 选择Agent
+        async function selectAgent(agentId) {
+            // 切页前保存当前会话 DOM，避免切回时丢失消息（含流式进行中的临时内容）
+            if (currentSessionId && currentSessionId !== `agent-${agentId}`) {
+                setSessionCache(currentSessionId, messagesContainer.innerHTML);
+            }
 
-            const agent = agents[index];
-            document.getElementById("currentAgentName").textContent = agent.name;
-            document.getElementById("currentAgentDesc").textContent = agent.desc;
-            document.querySelector(".header-agent-avatar").textContent = agent.emoji;
-            document.querySelector(".header-agent-avatar").style.background = agent.gradient;
-
-            messagesContainer.innerHTML = "";
-        }
-
-        function addNewAgent() {
-            const name = prompt("请输入新Agent名称：");
-            if (!name) return;
-            const desc = prompt("请输入Agent描述：") || "自定义助手";
-            const emojis = ["🌟", "🎯", "🚀", "💡", "🎨", "🔬", "📊", "🎭"];
-            const gradients = [
-                "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
-                "linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)",
-                "linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)",
-                "linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)"
-            ];
-            const idx = agents.length;
-            agents.push({
-                name: name,
-                desc: desc,
-                emoji: emojis[idx % emojis.length],
-                gradient: gradients[idx % gradients.length]
-            });
+            currentAgentId = agentId;
+            try { localStorage.setItem('rag_current_agent', agentId); } catch (e) { /* 忽略 */ }
             renderAgentList();
+            updateHeaderAgent();
+
+            const sessionId = `agent-${agentId}`;
+            currentSessionId = sessionId;
+
+            // 重置分页状态
+            historyPage = 0;
+            historyHasMore = false;
+            historyTotalPages = 0;
+
+            // 优先从本地存储恢复（跨页面切换 / 刷新后仍不丢失消息，秒开无闪烁）
+            const cachedHtml = getSessionCache(sessionId);
+            if (cachedHtml) {
+                messagesContainer.innerHTML = cachedHtml;
+                scrollToBottom();
+                return;
+            }
+
+            messagesContainer.innerHTML = '';
+
+            try {
+                // 加载第一页历史（最新5轮）
+                const res = await Auth.fetch(`/history/${sessionId}?page=0&page_size=${HISTORY_PAGE_SIZE}`);
+                const data = await res.json();
+
+                historyHasMore = data.has_more || false;
+                historyTotalPages = data.total_pages || 0;
+
+                if (data.messages && data.messages.length > 0) {
+                    // 有历史消息，显示历史（按时间升序，后端已排序）
+                    for (const msg of data.messages) {
+                        const roleMap = {
+                            'human': 'user',
+                            'user': 'user',
+                            'ai': 'ai',
+                            'assistant': 'ai',
+                            'tool': 'ai',
+                        };
+                        const role = roleMap[msg.role] || 'ai';
+                        const thinkingSteps = (role === 'ai' && msg.thinking_steps) ? msg.thinking_steps : null;
+                        addMessage(msg.content, role, role === 'ai', thinkingSteps);
+                    }
+                    scrollToBottom();
+                } else {
+                    // 无历史消息，显示greeting
+                    const agent = agents.find(a => a.id === agentId);
+                    if (agent && agent.greeting) {
+                        addMessage(agent.greeting, "ai");
+                    }
+                }
+            } catch (error) {
+                console.error('加载历史失败:', error);
+                const agent = agents.find(a => a.id === agentId);
+                if (agent && agent.greeting) {
+                    addMessage(agent.greeting, "ai");
+                }
+            }
+            // 缓存已加载的历史，供切页秒开
+            setSessionCache(sessionId, messagesContainer.innerHTML);
         }
 
-        function renderAgentList() {
-            const list = document.getElementById("agentList");
-            list.innerHTML = "";
-            agents.forEach((agent, index) => {
-                const item = document.createElement("div");
-                item.className = "agent-item" + (index === currentAgentIndex ? " active" : "");
-                item.onclick = function() { selectAgent(item, index); };
-                item.innerHTML = `
-                    <div class="agent-avatar" style="background: ${agent.gradient};">${agent.emoji}</div>
-                    <div class="agent-info">
-                        <div class="agent-name">${agent.name}</div>
-                        <div class="agent-desc">${agent.desc}</div>
-                    </div>
-                `;
-                list.appendChild(item);
-            });
+        // 加载更早的历史消息（向上滚动时触发）
+        async function loadMoreHistory() {
+            if (isLoadingHistory || !historyHasMore) {
+                return;
+            }
+
+            const sessionId = `agent-${currentAgentId}`;
+            const prevScrollHeight = messagesContainer.scrollHeight;
+            const prevScrollTop = messagesContainer.scrollTop;
+
+            isLoadingHistory = true;
+
+            try {
+                // 请求更早的一页
+                const nextPage = historyPage + 1;
+                const res = await Auth.fetch(`/history/${sessionId}?page=${nextPage}&page_size=${HISTORY_PAGE_SIZE}`);
+                const data = await res.json();
+
+                if (!data.messages || data.messages.length === 0) {
+                    historyHasMore = false;
+                    return;
+                }
+
+                historyPage = nextPage;
+                historyHasMore = data.has_more || false;
+
+                // 将更早的消息插入到消息列表前面
+                const tempDiv = document.createElement('div');
+                for (const msg of data.messages) {
+                    const roleMap = {
+                        'human': 'user',
+                        'user': 'user',
+                        'ai': 'ai',
+                        'assistant': 'ai',
+                        'tool': 'ai',
+                    };
+                    const role = roleMap[msg.role] || 'ai';
+                    
+                    // 创建消息元素
+                    const messageDiv = document.createElement("div");
+                    messageDiv.className = "message " + role;
+
+                    const avatarDiv = document.createElement("div");
+                    avatarDiv.className = "message-avatar";
+
+                    if (role === "user") {
+                        avatarDiv.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>';
+                    } else {
+                        const agent = agents.find(a => a.id === currentAgentId) || agents[0];
+                        if (agent) {
+                            const gradient = getAgentGradient(agent.id);
+                            avatarDiv.innerHTML = renderAgentAvatarContent(agent.avatar, '🤖');
+                            avatarDiv.style.background = gradient;
+                        } else {
+                            avatarDiv.innerHTML = '🤖';
+                            avatarDiv.style.background = 'linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%)';
+                        }
+                    }
+
+                    const contentDiv = document.createElement("div");
+                    contentDiv.className = "message-content";
+                    
+                    // 渲染思考过程
+                    if (role !== "user" && msg.thinking_steps) {
+                        try {
+                            let steps = msg.thinking_steps;
+                            if (typeof steps === 'string') {
+                                steps = JSON.parse(steps);
+                            }
+                            if (Array.isArray(steps) && steps.length > 0) {
+                                const thinkingContainer = createThinkingProcessContainer();
+                                updateThinkingProcess(thinkingContainer, steps, true);
+                                contentDiv.appendChild(thinkingContainer);
+                            }
+                        } catch (e) {
+                            console.warn("解析历史思考过程失败:", e);
+                        }
+                    }
+                    
+                    const answerDiv = document.createElement('div');
+                    answerDiv.className = 'final-answer';
+                    answerDiv.innerHTML = marked.parse(msg.content);
+                    contentDiv.appendChild(answerDiv);
+
+                    messageDiv.appendChild(avatarDiv);
+                    messageDiv.appendChild(contentDiv);
+                    tempDiv.appendChild(messageDiv);
+                }
+
+                // 插入到消息容器的开头
+                const fragment = document.createDocumentFragment();
+                while (tempDiv.firstChild) {
+                    fragment.appendChild(tempDiv.firstChild);
+                }
+                messagesContainer.insertBefore(fragment, messagesContainer.firstChild);
+
+                // 保持滚动位置不跳动
+                const newScrollHeight = messagesContainer.scrollHeight;
+                messagesContainer.scrollTop = prevScrollTop + (newScrollHeight - prevScrollHeight);
+
+                // 更早的历史已插入，更新缓存以保持跨页一致
+                setSessionCache(sessionId, messagesContainer.innerHTML);
+
+            } catch (error) {
+                console.error('加载更早历史失败:', error);
+            } finally {
+                isLoadingHistory = false;
+            }
+        }
+
+        // 添加新Agent - 弹出创建窗口
+        function addNewAgent() {
+            showCreateAgentModal();
         }
 
         function formatMarkdown(text) {
@@ -954,10 +1603,22 @@
         }
 
         async function sendMessage() {
+            // 并发锁：正在生成时忽略新的发送，避免多路流式互相干扰、答案错乱、重复消耗 token
+            if (isStreaming) {
+                console.warn("正在生成中，已忽略重复发送");
+                return;
+            }
             const text = input.value.trim();
             if (!text) {
                 return;
             }
+
+            // 进入 in_progress 状态：上锁 + 创建中止控制器 + 切换发送/停止按钮
+            isStreaming = true;
+            abortController = new AbortController();
+            sendBtn.style.display = 'none';
+            stopBtn.style.display = 'flex';
+            input.classList.add('streaming');
 
             addMessage(text, "user");
             input.value = "";
@@ -965,28 +1626,43 @@
 
             const aiDom = addMessage("", "ai");
             const contentDiv = aiDom.querySelector(".message-content");
-            contentDiv.innerHTML = '<div class="typing-indicator"><span class="typing-text">正在思考</span><div class="typing-dots"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>';
+            contentDiv.innerHTML = '<div class="typing-indicator"><span class="typing-text">正在输入</span><div class="typing-dots"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>';
 
             const model = modelSelector.value;
 
             try {
-                const res = await Auth.fetch("/smart/chat/public", {
+                const requestStartTime = Date.now();
+                const sessionId = currentAgentId ? `agent-${currentAgentId}` : "agent-default";
+                const res = await Auth.fetch("/smart/chat", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
+                    signal: abortController.signal,
                     body: JSON.stringify({
                         query: text,
-                        session_id: "agent-" + currentAgentIndex,
+                        session_id: sessionId,
                         stream: true,
-                        llm_provider: model
+                        llm_provider: model,
+                        agent_id: currentAgentId
                     })
                 });
 
                 const reader = res.body.getReader();
+                currentReader = reader;
                 const decoder = new TextDecoder("utf-8");
-                let fullText = "";
                 let buffer = "";
 
-                const sseRegex = /data:({.*?})\n\n/g;
+                const sseRegex = /data:([^\n]*)\n\n/g;
+
+                // 思考过程数据
+                const thinkingSteps = [];
+                let finalAnswer = "";
+                let hasRealThinking = false; // 是否收到过真正包含思考内容的步骤
+                let answerRendered = false;
+                let answerDiv = null;
+                let stopNoteAppended = false; // 避免中止提示重复追加
+
+                // 创建思考过程容器（初始隐藏）
+                let thinkingContainer = null;
 
                 while (true) {
                     const { done, value } = await reader.read();
@@ -997,30 +1673,360 @@
 
                     while ((match = sseRegex.exec(buffer)) !== null) {
                         try {
-                            const jsonData = JSON.parse(match[1]);
-                            const chunk = jsonData.choices[0].delta.content;
-                            if (chunk) {
-                                fullText += chunk;
-                                contentDiv.innerHTML = marked.parse(fullText);
+                            const event = JSON.parse(match[1]);
+
+                            if (event.type === "thinking") {
+                                // 只有真正包含思考内容或明确工具调用的事件，才渲染思考过程容器
+                                const content = (event.content || "").trim();
+                                const hasTools = (event.tools || []).length > 0;
+                                const isPlaceholder = !content || content === "正在思考..." || content === "正在输入...";
+                                if (!isPlaceholder || hasTools) {
+                                    hasRealThinking = true;
+                                    thinkingSteps.push(event);
+
+                                    if (!thinkingContainer) {
+                                        contentDiv.innerHTML = '';
+                                        thinkingContainer = createThinkingProcessContainer();
+                                        contentDiv.appendChild(thinkingContainer);
+                                    }
+                                    updateThinkingProcess(thinkingContainer, thinkingSteps);
+                                    scrollToBottom();
+                                }
+
+                            } else if (event.type === "tool_result") {
+                                // 工具结果事件
+                                hasRealThinking = true;
+                                thinkingSteps.push(event);
+                                if (!thinkingContainer) {
+                                    contentDiv.innerHTML = '';
+                                    thinkingContainer = createThinkingProcessContainer();
+                                    contentDiv.appendChild(thinkingContainer);
+                                }
+                                updateThinkingProcess(thinkingContainer, thinkingSteps);
                                 scrollToBottom();
+
+                            } else if (event.type === "answer") {
+                                // 最终答案事件（含流式增量更新）
+                                finalAnswer = event.content || "";
+
+                                // 答案到达，思考结束，标记已完成
+                                if (thinkingContainer) {
+                                    updateThinkingProcess(thinkingContainer, thinkingSteps, true);
+                                }
+
+                                if (event.streaming) {
+                                    // 流式增量：全量替换渲染（模拟打字效果）
+                                    if (!answerRendered) {
+                                        // 首次 answer 事件，清空并创建容器
+                                        contentDiv.innerHTML = '';
+                                        if (thinkingContainer) {
+                                            contentDiv.appendChild(thinkingContainer);
+                                        }
+                                        answerDiv = document.createElement('div');
+                                        answerDiv.className = 'final-answer';
+                                        contentDiv.appendChild(answerDiv);
+                                        answerRendered = true;
+                                    }
+                                    // 更新累积内容
+                                    const formatted = formatMarkdown(finalAnswer);
+                                    answerDiv.innerHTML = marked.parse(formatted);
+                                    scrollToBottom();
+                                } else {
+                                    // 最终完成：清空并完整渲染
+                                    contentDiv.innerHTML = '';
+                                    if (thinkingContainer) {
+                                        contentDiv.appendChild(thinkingContainer);
+                                    }
+                                    const answerDivFinal = document.createElement('div');
+                                    answerDivFinal.className = 'final-answer';
+                                    const formatted = formatMarkdown(finalAnswer);
+                                    answerDivFinal.innerHTML = marked.parse(formatted);
+                                    contentDiv.appendChild(answerDivFinal);
+                                    scrollToBottom();
+                                }
+
+                            } else if (event.type === "stats") {
+                                // 本次 Token 消耗统计 + 总耗时：在回答底部追加一行小字
+                                const totalTok = event.total_tokens || 0;
+                                const elapsedMs = Date.now() - requestStartTime;
+                                const elapsedText = elapsedMs >= 1000
+                                    ? `${(elapsedMs / 1000).toFixed(1)}s`
+                                    : `${elapsedMs}ms`;
+                                let footer = contentDiv.querySelector('.token-usage-footer');
+                                if (!footer) {
+                                    footer = document.createElement('div');
+                                    footer.className = 'token-usage-footer';
+                                    footer.style.cssText = 'margin-top:10px; font-size:11px; color:#94a3b8; display:flex; align-items:center; gap:10px;';
+                                    contentDiv.appendChild(footer);
+                                }
+                                const inTok = event.input_tokens || 0;
+                                const outTok = event.output_tokens || 0;
+                                const tokenPart = totalTok > 0
+                                    ? `🔢 Token 消耗：总计 <b style="color:#64748b">${totalTok}</b>（输入 ${inTok} / 输出 ${outTok}）`
+                                    : '';
+                                const timePart = `⏱️ 总耗时 <b style="color:#64748b">${elapsedText}</b>`;
+                                footer.innerHTML = [tokenPart, timePart].filter(Boolean).join('&nbsp;&nbsp;');
+
+                            } else if (event.choices) {
+                                // 兼容旧格式（chat 模式或降级）
+                                const chunk = event.choices[0].delta.content;
+                                if (chunk) {
+                                    finalAnswer += chunk;
+                                    contentDiv.innerHTML = marked.parse(finalAnswer);
+                                    scrollToBottom();
+                                }
+                            } else {
+                                // 未知事件类型，记录调试用
+                                console.warn("收到未知 SSE 事件:", event);
                             }
                         } catch (err) {
-                            console.error("解析失败：", err);
+                            console.error("解析失败：", err, "原始片段:", match[1]);
                         }
                     }
                     buffer = buffer.replace(sseRegex, "");
                 }
 
-                const formatted = formatMarkdown(fullText);
-                contentDiv.innerHTML = marked.parse(formatted);
-                scrollToBottom();
+                // 如果没有收到任何结构化事件但收集到了最终答案，兜底渲染
+                if (!hasRealThinking && finalAnswer) {
+                    const formatted = formatMarkdown(finalAnswer);
+                    contentDiv.innerHTML = marked.parse(formatted);
+                }
+
             } catch (error) {
-                console.error("请求错误:", error);
-                contentDiv.innerHTML = '<span style="color: #e53e3e;">网络错误，请重试</span>';
+                if (error && error.name === 'AbortError') {
+                    // 用户主动中止生成：保留已输出的思考/回答，仅追加停止提示
+                    if (!stopNoteAppended) {
+                        stopNoteAppended = true;
+                        const note = document.createElement('div');
+                        note.style.cssText = 'color:#f59e0b; font-size:12px; margin-top:8px;';
+                        note.textContent = '⏹ 已停止生成';
+                        // 如果当前还是打字占位（既没思考也没答案），先清空再保留停止提示
+                        const onlyTyping = !hasRealThinking && !answerRendered;
+                        if (onlyTyping) {
+                            contentDiv.innerHTML = '';
+                        }
+                        contentDiv.appendChild(note);
+                        scrollToBottom();
+                    }
+                } else {
+                    console.error("请求错误:", error);
+                    contentDiv.innerHTML = '<span style="color: #e53e3e;">网络错误，请重试</span>';
+                }
+            } finally {
+                // 退出 in_progress 状态：复位并发锁、中止控制器、按钮与输入框
+                isStreaming = false;
+                abortController = null;
+                currentReader = null;
+                sendBtn.style.display = '';
+                stopBtn.style.display = 'none';
+                input.classList.remove('streaming');
+                // 缓存当前会话消息，保证切页 / 刷新不丢失
+                if (currentSessionId) {
+                    setSessionCache(currentSessionId, messagesContainer.innerHTML);
+                }
             }
         }
 
-        function addMessage(text, role) {
+        function createThinkingProcessContainer() {
+            const container = document.createElement('div');
+            container.className = 'thinking-process';
+            
+            const header = document.createElement('div');
+            header.className = 'thinking-process-header';
+            header.innerHTML = `
+                <div class="thinking-process-title">
+                    <span class="thinking-icon">💭</span>
+                    <span>思考过程</span>
+                    <span class="thinking-count">0</span>
+                </div>
+                <span class="thinking-process-toggle">›</span>
+            `;
+            
+            const body = document.createElement('div');
+            body.className = 'thinking-process-body';
+            
+            container.appendChild(header);
+            container.appendChild(body);
+            
+            // 点击展开/折叠
+            header.addEventListener('click', () => {
+                container.classList.toggle('expanded');
+            });
+            
+            // 默认展开
+            container.classList.add('expanded');
+            
+            return container;
+        }
+
+        function startTypewriter(el, fullText, onDone) {
+            // 逐字填充文本，模拟流式思考效果
+            el.dataset.typing = '1';
+            const len = fullText.length;
+            const totalMs = Math.min(1200, Math.max(250, len * 12));
+            const start = performance.now();
+            function frame(now) {
+                const p = Math.min(1, (now - start) / totalMs);
+                const n = Math.floor(p * len);
+                el.textContent = fullText.slice(0, n);
+                if (p < 1) {
+                    requestAnimationFrame(frame);
+                } else {
+                    el.textContent = fullText;
+                    delete el.dataset.typing;
+                    if (onDone) onDone();
+                }
+            }
+            requestAnimationFrame(frame);
+        }
+
+        function updateThinkingProcess(container, steps, done = false) {
+            const body = container.querySelector('.thinking-process-body');
+            const countBadge = container.querySelector('.thinking-count');
+            const thinkingSteps = (steps || []).filter(s => s && (s.type === 'thinking' || s.type === 'tool_result'));
+
+            countBadge.textContent = thinkingSteps.length;
+
+            // 打字机进度记录：已完整显示的步骤不再重播动画
+            if (!container._typedSteps) container._typedSteps = new Set();
+
+            // 渲染所有步骤（最后一个尚未打字的思考/观察步骤先留空，由打字机逐字填充）
+            let html = thinkingSteps.map((step, idx) => {
+                const stepNum = step.step || (idx + 1);
+                const isLast = idx === thinkingSteps.length - 1;
+                const alreadyTyped = container._typedSteps.has(stepNum);
+                if (step.type === 'thinking') {
+                    const tools = step.tools || [];
+                    const phase = step.phase || 'thinking';
+                    let badgeLabel, badgeClass;
+                    if (phase === 'thought') { badgeLabel = 'Thought'; badgeClass = 'thought'; }
+                    else if (phase === 'action') { badgeLabel = 'Action'; badgeClass = 'action'; }
+                    else if (phase === 'final') { badgeLabel = 'Final Answer'; badgeClass = 'final'; }
+                    else { badgeLabel = '思考'; badgeClass = 'thinking'; }
+
+                    let toolInfo = '';
+                    if (phase !== 'action' && tools.length > 0) {
+                        const toolLines = tools.map(t => {
+                            const name = t.name || 'unknown';
+                            let args = '';
+                            if (t.args && typeof t.args === 'object') {
+                                args = Object.entries(t.args)
+                                    .map(([k, v]) => `${k}=${JSON.stringify(v)}`)
+                                    .join(', ');
+                            }
+                            return `调用 ${name}${args ? ': ' + args : ''}`;
+                        });
+                        toolInfo = `<div style="font-size:11px; color:#8892a0; margin-top:4px; line-height:1.5;">${toolLines.map(line => `<div>${escapeHtml(line)}</div>`).join('')}</div>`;
+                    }
+                    const fullContent = step.content || '';
+                    const hasContent = fullContent.trim().length > 0;
+                    let contentInner;
+                    if (hasContent) {
+                        // 最后一个步骤且尚未打字完成：先留空，由打字机填充
+                        const showEmpty = isLast && !alreadyTyped && !done;
+                        contentInner = `<span class="thinking-step-text">${showEmpty ? '' : escapeHtml(fullContent)}</span>`;
+                    } else {
+                        contentInner = tools.length > 0
+                            ? '<span style="color:#94a3b8">（准备调用工具）</span>'
+                            : '<span style="color:#94a3b8">（思考内容为空）</span>';
+                    }
+                    return `
+                        <div class="thinking-step" data-step-idx="${stepNum}">
+                            <div class="thinking-step-header">
+                                <span class="thinking-step-badge ${badgeClass}">${badgeLabel} <span class="step-num">步骤${stepNum}</span></span>
+                            </div>
+                            <div class="thinking-step-content">${contentInner}${toolInfo}</div>
+                        </div>
+                    `;
+                } else if (step.type === 'tool_result') {
+                    const fullContent = (step.content || '').trim() || '无结果';
+                    const phase = step.phase || '';
+                    const isObservation = phase === 'observation';
+                    const badgeLabel = isObservation ? 'Observation' : '工具结果';
+                    const badgeClass = isObservation ? 'observation' : 'tool_result';
+                    const showEmpty = isLast && !container._typedSteps.has(stepNum) && !done;
+                    const contentInner = `<span class="thinking-step-text">${showEmpty ? '' : escapeHtml(fullContent)}</span>`;
+                    return `
+                        <div class="thinking-step" data-step-idx="${stepNum}">
+                            <div class="thinking-step-header">
+                                <span class="thinking-step-badge ${badgeClass}">${badgeLabel} <span class="step-num">步骤${stepNum}</span></span>
+                            </div>
+                            <div class="thinking-step-content tool-result">
+                                ${contentInner}
+                            </div>
+                        </div>
+                    `;
+                }
+                return '';
+            }).join('');
+
+            // 当暂无步骤时，展示全屏思考中动画；若步骤存在但无法渲染，兜底显示原始数据
+            if (thinkingSteps.length === 0) {
+                html = `
+                    <div class="thinking-body-pending">
+                        <div class="thinking-brain">💭</div>
+                        <div class="thinking-dots"><span></span><span></span><span></span></div>
+                        <span>正在思考中</span>
+                    </div>
+                `;
+            } else if (!html.trim()) {
+                html = `
+                    <div class="thinking-step">
+                        <div class="thinking-step-header">
+                            <span class="thinking-step-badge thinking">调试</span>
+                        </div>
+                        <div class="thinking-step-content">
+                            收到 ${thinkingSteps.length} 个步骤，但类型不匹配：
+                            <pre style="margin-top:6px;background:#f1f5f9;padding:6px;border-radius:4px;font-size:11px;overflow:auto;">${escapeHtml(JSON.stringify(thinkingSteps, null, 2))}</pre>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 有步骤且流尚未结束时，在底部显示持续思考提示
+            if (thinkingSteps.length > 0 && !done) {
+                html += `
+                    <div class="thinking-step-pending-inline">
+                        <span>思考中</span>
+                        <span class="dot"></span>
+                        <span class="dot"></span>
+                        <span class="dot"></span>
+                    </div>
+                `;
+            }
+
+            body.innerHTML = html;
+
+            // 打字机：为最后一个尚未完整显示的步骤逐字填充文本，营造流式效果
+            if (done) {
+                body.querySelectorAll('.thinking-step').forEach(el => {
+                    const k = parseInt(el.getAttribute('data-step-idx') || '-1', 10);
+                    if (k > 0 && !container._typedSteps.has(k)) {
+                        const t = el.querySelector('.thinking-step-text');
+                        const src = thinkingSteps.find(s => (s.step || 0) === k);
+                        if (t && src) t.textContent = src.content || ((src.type === 'tool_result') ? (src.content || '无结果') : '');
+                        container._typedSteps.add(k);
+                    }
+                });
+            } else {
+                const lastStepEl = body.querySelector('.thinking-step:last-of-type');
+                if (lastStepEl) {
+                    const key = parseInt(lastStepEl.getAttribute('data-step-idx') || '-1', 10);
+                    const textEl = lastStepEl.querySelector('.thinking-step-text');
+                    const srcStep = thinkingSteps[thinkingSteps.length - 1];
+                    if (textEl && key > 0 && !container._typedSteps.has(key) && !textEl.dataset.typing && srcStep) {
+                        const full = (srcStep.content || '').trim();
+                        if (full) {
+                            startTypewriter(textEl, full, () => container._typedSteps.add(key));
+                        } else {
+                            container._typedSteps.add(key);
+                        }
+                    }
+                }
+            }
+        }
+
+        function addMessage(text, role, useMarkdown = true, thinkingSteps = null) {
             const messageDiv = document.createElement("div");
             messageDiv.className = "message " + role;
 
@@ -1028,16 +2034,57 @@
             avatarDiv.className = "message-avatar";
 
             if (role === "user") {
-                avatarDiv.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>';
+                const userInfo = window.Auth ? Auth.getUserInfo() : null;
+                const fallback = (userInfo && (userInfo.nickname || userInfo.username))
+                    ? (userInfo.nickname || userInfo.username).charAt(0).toUpperCase()
+                    : 'U';
+                let avatarUrl = userInfo && userInfo.avatar ? userInfo.avatar : '';
+                // 若 Auth 中暂无头像，优先复用 sidebar 当前已显示的头像，避免消息与侧边栏不一致
+                if (!avatarUrl) {
+                    const sidebarImg = document.querySelector('.sidebar-avatar img');
+                    avatarUrl = sidebarImg ? sidebarImg.getAttribute('src') : '';
+                }
+                avatarDiv.innerHTML = renderAgentAvatarContent(avatarUrl, fallback);
             } else {
-                const agent = agents[currentAgentIndex];
-                avatarDiv.textContent = agent.emoji;
-                avatarDiv.style.background = agent.gradient;
-            }
+                    const agent = agents.find(a => a.id === currentAgentId) || agents[0];
+                    if (agent) {
+                        const gradient = getAgentGradient(agent.id);
+                        avatarDiv.innerHTML = renderAgentAvatarContent(agent.avatar, '🤖');
+                        avatarDiv.style.background = gradient;
+                    } else {
+                        avatarDiv.innerHTML = '🤖';
+                        avatarDiv.style.background = 'linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%)';
+                    }
+                }
 
             const contentDiv = document.createElement("div");
             contentDiv.className = "message-content";
-            contentDiv.textContent = text;
+            
+            // 如果是AI消息且有思考过程，渲染思考面板
+            if (role !== "user" && thinkingSteps) {
+                try {
+                    let steps = thinkingSteps;
+                    if (typeof steps === 'string') {
+                        steps = JSON.parse(steps);
+                    }
+                    if (Array.isArray(steps) && steps.length > 0) {
+                        const thinkingContainer = createThinkingProcessContainer();
+                        updateThinkingProcess(thinkingContainer, steps, true);
+                        contentDiv.appendChild(thinkingContainer);
+                    }
+                } catch (e) {
+                    console.warn("解析历史思考过程失败:", e);
+                }
+            }
+            
+            const answerDiv = document.createElement('div');
+            answerDiv.className = 'final-answer';
+            if (useMarkdown) {
+                answerDiv.innerHTML = marked.parse(text);
+            } else {
+                answerDiv.textContent = text;
+            }
+            contentDiv.appendChild(answerDiv);
 
             messageDiv.appendChild(avatarDiv);
             messageDiv.appendChild(contentDiv);
@@ -1071,7 +2118,1238 @@
                 toast.remove();
             }, 3000);
         }
+
+        // ====== Agent 创建弹窗逻辑 ======
+
+        // 弹窗状态
+        let tempSelectedTools = [];
+        let tempSelectedKBs = [];
+        let tempToolConfigs = {}; // 创建态：工具级配置，key=code_path
+        let allSystemTools = [];
+        let allMyTools = [];
+        let allKBs = [];
+        let currentToolTab = 'system';
+        let currentSelectionContext = 'create'; // 'create' or 'edit'
+        let currentConfigTool = null; // 当前正在配置的工具对象
+
+        function showCreateAgentModal() {
+            document.getElementById('agentName').value = '';
+            document.getElementById('agentAvatar').value = '🤖';
+            document.getElementById('agentAvatarPreview').innerHTML = renderAgentAvatarContent('🤖', '🤖');
+            document.getElementById('agentSystemPrompt').value = '';
+            document.getElementById('agentGreeting').value = '';
+            tempSelectedTools = [];
+            tempSelectedKBs = [];
+            tempToolConfigs = {};
+            editingAgentId = null;  // 确保上下文为创建模式
+            updateAgentToolsDisplay();
+            updateAgentKBsDisplay();
+            document.getElementById('createAgentModal').style.display = 'flex';
+        }
+
+        // ====== Agent 头像上传（与用户信息页一致） ======
+        async function uploadAgentAvatar(input, kind) {
+            const file = input.files && input.files[0];
+            if (!file) return;
+            const previewId = kind === 'edit' ? 'editAgentAvatarPreview' : 'agentAvatarPreview';
+            const hiddenId = kind === 'edit' ? 'editAgentAvatar' : 'agentAvatar';
+            const preview = document.getElementById(previewId);
+            const previousValue = document.getElementById(hiddenId).value;
+
+            // 本地先预览
+            const reader = new FileReader();
+            reader.onload = e => {
+                preview.innerHTML = '<img src="' + e.target.result + '" style="width:100%;height:100%;object-fit:cover;">';
+            };
+            reader.readAsDataURL(file);
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('old_url', previousValue || '');
+            const token = localStorage.getItem('access_token') || '';
+            try {
+                const res = await fetch('/api/upload/avatar', {
+                    method: 'POST',
+                    headers: { 'Authorization': token ? 'Bearer ' + token : '' },
+                    body: formData
+                });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.msg || '上传失败');
+                }
+                const data = await res.json();
+                document.getElementById(hiddenId).value = data.url;
+                showToast('头像上传成功', 'success');
+            } catch (err) {
+                console.error('Agent 头像上传失败:', err);
+                showToast('头像上传失败：' + err.message, 'error');
+                document.getElementById(hiddenId).value = previousValue;
+                preview.innerHTML = renderAgentAvatarContent(previousValue, '🤖');
+            } finally {
+                input.value = '';
+            }
+        }
+
+        function resetAgentAvatar(kind) {
+            const previewId = kind === 'edit' ? 'editAgentAvatarPreview' : 'agentAvatarPreview';
+            const hiddenId = kind === 'edit' ? 'editAgentAvatar' : 'agentAvatar';
+            document.getElementById(previewId).innerHTML = '🤖';
+            document.getElementById(hiddenId).value = '🤖';
+        }
+
+        function hideCreateAgentModal() {
+            document.getElementById('createAgentModal').style.display = 'none';
+        }
+
+        function updateAgentToolsDisplay() {
+            const placeholder = document.getElementById('agentToolsPlaceholder');
+            const container = document.getElementById('agentToolsSelected');
+            if (tempSelectedTools.length === 0) {
+                placeholder.style.display = 'block';
+                container.style.display = 'none';
+                container.innerHTML = '';
+            } else {
+                placeholder.style.display = 'none';
+                container.style.display = 'flex';
+                container.style.flexWrap = 'wrap';
+                container.style.gap = '6px';
+                container.style.marginTop = '4px';
+                container.innerHTML = tempSelectedTools.map(t =>
+                    `<span style="display:inline-block; padding:4px 10px; background:linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%); color:white; border-radius:12px; font-size:12px;">${escapeHtml(t.name)}</span>`
+                ).join('');
+            }
+        }
+
+        function updateAgentKBsDisplay() {
+            const placeholder = document.getElementById('agentKBsPlaceholder');
+            const container = document.getElementById('agentKBsSelected');
+            if (tempSelectedKBs.length === 0) {
+                placeholder.style.display = 'block';
+                container.style.display = 'none';
+                container.innerHTML = '';
+            } else {
+                placeholder.style.display = 'none';
+                container.style.display = 'flex';
+                container.style.flexWrap = 'wrap';
+                container.style.gap = '6px';
+                container.style.marginTop = '4px';
+                container.innerHTML = tempSelectedKBs.map(k =>
+                    `<span style="display:inline-block; padding:4px 10px; background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); color:white; border-radius:12px; font-size:12px;">${escapeHtml(k.name)}</span>`
+                ).join('');
+            }
+        }
+
+        async function submitCreateAgent() {
+            const name = document.getElementById('agentName').value.trim();
+            const desc = document.getElementById('agentDesc').value.trim();
+            const systemPrompt = document.getElementById('agentSystemPrompt').value.trim();
+            const temperature = parseFloat(document.getElementById('agentTemperature').value);
+            const greeting = document.getElementById('agentGreeting').value.trim();
+
+            if (!name) {
+                showToast('请输入Agent名称', 'error');
+                return;
+            }
+
+            const toolIds = tempSelectedTools.map(t => t.id);
+            const hasKS = tempSelectedTools.some(t => t.code_path === 'knowledge_search');
+            const toolConfigs = {};
+            if (hasKS) {
+                // 只要绑定了知识库查询工具，就一定把它的配置带下去，避免只改默认值时没保存
+                toolConfigs['knowledge_search'] = tempToolConfigs['knowledge_search'] || {
+                    top_k: 5, similarity_threshold: 0.0, strategy: 'hybrid', use_rerank: true, enable_query_rewrite: false
+                };
+            }
+
+            try {
+                const res = await fetch('/api/agent/agents', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                    },
+                    body: JSON.stringify({
+                        name,
+                        avatar: document.getElementById('agentAvatar').value.trim() || '🤖',
+                        desc,
+                        system_prompt: systemPrompt,
+                        temperature,
+                        tool_ids: toolIds,
+                        kb_ids: tempSelectedKBs.map(k => k.id),
+                        greeting,
+                        tool_configs: toolConfigs
+                    })
+                });
+
+                if (res.status === 401) {
+                    localStorage.removeItem('access_token');
+                    window.location.href = '/front/login.html';
+                    return;
+                }
+
+                if (!res.ok) {
+                    const error = await res.json().catch(() => ({}));
+                    throw new Error(error.message || '创建失败');
+                }
+
+                showToast('Agent创建成功', 'success');
+                hideCreateAgentModal();
+                await loadAgents();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        // ====== 场景模板画廊逻辑 ======
+
+        let templateGalleryData = [];
+
+        function openTemplateGallery() {
+            document.getElementById('templateGalleryModal').style.display = 'flex';
+            const listEl = document.getElementById('templateGalleryList');
+            listEl.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px; color:#9ca3af;">加载中...</div>';
+            fetch('/api/agent/templates', {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
+            })
+                .then(res => {
+                    if (res.status === 401) {
+                        localStorage.removeItem('access_token');
+                        window.location.href = '/front/login.html';
+                        return;
+                    }
+                    return res.json();
+                })
+                .then(data => {
+                    if (!data) return;
+                    templateGalleryData = data.templates || [];
+                    if (templateGalleryData.length === 0) {
+                        listEl.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px; color:#9ca3af;">暂无模板</div>';
+                        return;
+                    }
+                    listEl.innerHTML = templateGalleryData.map(t => `
+                        <div onclick="applyTemplate('${t.id}')"
+                            style="padding:18px; border:1px solid #e8ecf1; border-radius:14px; cursor:pointer; transition:all 0.2s; background:white; display:flex; flex-direction:column;"
+                            onmouseover="this.style.borderColor='#40E0D0'; this.style.boxShadow='0 6px 18px rgba(64,224,208,0.15)';"
+                            onmouseout="this.style.borderColor='#e8ecf1'; this.style.boxShadow='none';">
+                            <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+                                <span style="font-size:24px;">${t.icon || '🧩'}</span>
+                                <span style="font-size:15px; font-weight:600; color:#1a1a2e;">${escapeHtml(t.name)}</span>
+                            </div>
+                            <div style="font-size:13px; color:#8892a0; line-height:1.5; margin-bottom:12px; flex:1;">${escapeHtml(t.desc || '')}</div>
+                            <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                                ${(t.tags || []).map(tag => `<span style="padding:2px 8px; background:#f1f5f9; color:#64748b; border-radius:8px; font-size:11px;">${escapeHtml(tag)}</span>`).join('')}
+                            </div>
+                        </div>
+                    `).join('');
+                })
+                .catch(() => {
+                    listEl.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px; color:#9ca3af;">加载失败</div>';
+                });
+        }
+
+        function hideTemplateGallery() {
+            document.getElementById('templateGalleryModal').style.display = 'none';
+        }
+
+        async function applyTemplate(id) {
+            const tpl = templateGalleryData.find(t => t.id === id);
+            if (!tpl) return;
+            hideTemplateGallery();
+
+            // 复用创建弹窗（会先重置所有字段与上下文）
+            showCreateAgentModal();
+            document.getElementById('agentName').value = (tpl.name || '新Agent') + '（副本）';
+            document.getElementById('agentDesc').value = tpl.desc || '';
+            document.getElementById('agentSystemPrompt').value = tpl.system_prompt || '';
+            document.getElementById('agentGreeting').value = tpl.greeting || '';
+            const temp = (tpl.temperature != null) ? tpl.temperature : 0.7;
+            document.getElementById('agentTemperature').value = temp;
+            document.getElementById('agentTempValue').textContent = Number(temp).toFixed(2);
+
+            // 按 code_path 解析工具并预选
+            try {
+                const token = localStorage.getItem('access_token');
+                const [sysRes, myRes] = await Promise.all([
+                    fetch('/api/agent/tools?tool_type=system', { headers: { 'Authorization': `Bearer ${token}` } }),
+                    fetch('/api/agent/tools?tool_type=custom', { headers: { 'Authorization': `Bearer ${token}` } })
+                ]);
+                const sysData = await sysRes.json();
+                const myData = await myRes.json();
+                const allTools = (sysData.tools || []).concat(myData.tools || []);
+                const wanted = tpl.tool_code_paths || [];
+                tempSelectedTools = allTools
+                    .filter(t => wanted.includes(t.code_path))
+                    .map(t => ({ id: t.id, name: t.name, desc: t.desc, tool_type: t.tool_type, code_path: t.code_path }));
+                updateAgentToolsDisplay();
+            } catch (e) {
+                console.warn('模板工具解析失败，可手动补齐:', e);
+            }
+
+            // 工具级配置（如 knowledge_search 检索策略）
+            tempToolConfigs = tpl.tool_configs || {};
+
+            if (tpl.kb_hint) {
+                showToast(tpl.kb_hint, 'info');
+            }
+        }
+
+        // ====== 工具选择弹窗逻辑 ======
+
+        function getCurrentSelectedTools() {
+            return currentSelectionContext === 'edit' ? editTempSelectedTools : tempSelectedTools;
+        }
+
+        function setCurrentSelectedTools(val) {
+            if (currentSelectionContext === 'edit') {
+                editTempSelectedTools = val;
+            } else {
+                tempSelectedTools = val;
+            }
+        }
+
+        function getCurrentToolConfigs() {
+            return currentSelectionContext === 'edit' ? editTempToolConfigs : tempToolConfigs;
+        }
+
+        async function showToolSelectModal() {
+            // 判断当前上下文：如果编辑弹窗显示中，则为edit模式
+            currentSelectionContext = (editingAgentId !== null) ? 'edit' : 'create';
+            
+            document.getElementById('toolSelectModal').style.display = 'flex';
+            document.getElementById('toolSearch').value = '';
+            currentToolTab = 'system';
+            document.getElementById('toolTabSystem').style.background = '#40E0D0';
+            document.getElementById('toolTabSystem').style.color = 'white';
+            document.getElementById('toolTabMy').style.background = 'white';
+            document.getElementById('toolTabMy').style.color = '#4b5563';
+
+            try {
+                const token = localStorage.getItem('access_token');
+                const [systemRes, myRes] = await Promise.all([
+                    fetch('/api/agent/tools?tool_type=system', { headers: { 'Authorization': `Bearer ${token}` } }),
+                    fetch('/api/agent/tools?tool_type=custom', { headers: { 'Authorization': `Bearer ${token}` } })
+                ]);
+
+                if (systemRes.status === 401 || myRes.status === 401) {
+                    localStorage.removeItem('access_token');
+                    window.location.href = '/front/login.html';
+                    return;
+                }
+
+                const systemData = await systemRes.json();
+                const myData = await myRes.json();
+                allSystemTools = systemData.tools || [];
+                allMyTools = myData.tools || [];
+                renderToolList();
+            } catch (error) {
+                showToast('加载工具失败', 'error');
+                document.getElementById('toolList').innerHTML = '<div style="text-align:center; padding:40px; color:#9ca3af;">加载失败</div>';
+            }
+        }
+
+        function hideToolSelectModal() {
+            document.getElementById('toolSelectModal').style.display = 'none';
+        }
+
+        function switchToolTab(tab) {
+            currentToolTab = tab;
+            document.getElementById('toolTabSystem').style.background = tab === 'system' ? '#40E0D0' : 'white';
+            document.getElementById('toolTabSystem').style.color = tab === 'system' ? 'white' : '#4b5563';
+            document.getElementById('toolTabMy').style.background = tab === 'custom' ? '#40E0D0' : 'white';
+            document.getElementById('toolTabMy').style.color = tab === 'custom' ? 'white' : '#4b5563';
+            renderToolList();
+        }
+
+        function renderToolList() {
+            const searchKeyword = document.getElementById('toolSearch').value.trim().toLowerCase();
+            const tools = currentToolTab === 'system' ? allSystemTools : allMyTools;
+            const filtered = tools.filter(t =>
+                !searchKeyword ||
+                t.name.toLowerCase().includes(searchKeyword) ||
+                (t.desc && t.desc.toLowerCase().includes(searchKeyword))
+            );
+
+            const currentTools = getCurrentSelectedTools();
+            const listEl = document.getElementById('toolList');
+            if (filtered.length === 0) {
+                listEl.innerHTML = '<div style="text-align:center; padding:40px; color:#9ca3af;">暂无工具</div>';
+                return;
+            }
+
+            listEl.innerHTML = filtered.map(tool => {
+                const isSelected = currentTools.some(t => String(t.id) === String(tool.id));
+                return `
+                    <div onclick="toggleTool('${tool.id}', '${escapeHtml(tool.name)}', '${escapeHtml(tool.desc || '')}', '${tool.tool_type}', '${tool.code_path || ''}')" 
+                         style="display:flex; align-items:center; gap:12px; padding:12px; border-radius:8px; cursor:pointer; transition:all 0.2s; background:${isSelected ? 'rgba(64,224,208,0.1)' : 'transparent'};"
+                         onmouseover="this.style.background='${isSelected ? 'rgba(64,224,208,0.15)' : '#f8f9fa'}'" 
+                         onmouseout="this.style.background='${isSelected ? 'rgba(64,224,208,0.1)' : 'transparent'}">
+                        <div style="width:8px; height:8px; border-radius:50%; background:${isSelected ? '#40E0D0' : '#e8ecf1'};"></div>
+                        <div style="flex:1; min-width:0;">
+                            <div style="font-size:14px; font-weight:500; color:#1a1a2e; margin-bottom:2px;">${escapeHtml(tool.name)}</div>
+                            <div style="font-size:12px; color:#8892a0;">${escapeHtml(tool.desc || '暂无描述')}</div>
+                        </div>
+                        ${isSelected ? '<span style="color:#40E0D0; margin-right:4px; flex-shrink:0;">✓</span>' : '<span style="width:0; flex-shrink:0;"></span>'}
+                        <button onclick="event.stopPropagation(); openToolConfig('${tool.id}');" 
+                                title="配置工具参数"
+                                style="width:30px; height:30px; border-radius:6px; border:1px solid #e2e8f0; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:13px; font-weight:600; flex-shrink:0; opacity:0.7;"
+                                onmouseover="this.style.background='#f8fafc'; this.style.color='#64748b'; this.style.borderColor='#cbd5e1'; this.style.opacity='1';"
+                                onmouseout="this.style.background='transparent'; this.style.color='#94a3b8'; this.style.borderColor='#e2e8f0'; this.style.opacity='0.7';">···</button>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('toolSelectedCount').textContent = currentTools.length;
+        }
+
+        function toggleTool(id, name, desc, type, codePath) {
+            const currentTools = getCurrentSelectedTools();
+            const index = currentTools.findIndex(t => String(t.id) === String(id));
+            if (index >= 0) {
+                currentTools.splice(index, 1);
+            } else {
+                currentTools.push({ id: id, name, desc, tool_type: type, code_path: codePath });
+            }
+            setCurrentSelectedTools(currentTools);
+            renderToolList();
+        }
+
+        function openToolConfig(toolId) {
+            // 防止从编辑弹窗/创建弹窗混用时上下文错乱
+            currentSelectionContext = (editingAgentId !== null) ? 'edit' : 'create';
+            const tools = currentToolTab === 'system' ? allSystemTools : allMyTools;
+            const tool = tools.find(t => String(t.id) === String(toolId));
+            if (!tool) return;
+            currentConfigTool = tool;
+            renderToolConfigContent();
+            document.getElementById('toolConfigModal').style.display = 'flex';
+        }
+
+        function renderToolConfigContent() {
+            const body = document.getElementById('toolConfigBody');
+            if (!currentConfigTool) return;
+            const codePath = currentConfigTool.code_path || '';
+            const toolConfigs = getCurrentToolConfigs();
+
+            if (codePath === 'knowledge_search') {
+                const cfg = toolConfigs['knowledge_search'] || {};
+                const topK = cfg.top_k ?? 5;
+                const strategy = cfg.strategy ?? 'hybrid';
+                const useRerank = cfg.use_rerank ?? true;
+                const enableRewrite = cfg.enable_query_rewrite ?? false;
+
+                body.innerHTML = `
+                    <div style="margin-bottom:20px;">
+                        <label style="display:block; font-size:14px; font-weight:500; color:#1a1a2e; margin-bottom:8px;">检索条数 (top_k)</label>
+                        <input type="number" id="tcTopK" value="${topK}" min="1" max="50"
+                            style="width:100%; padding:10px 14px; border:1px solid #e8ecf1; border-radius:8px; font-size:14px; outline:none;">
+                    </div>
+                    <div style="margin-bottom:20px;">
+                        <label style="display:block; font-size:14px; font-weight:500; color:#1a1a2e; margin-bottom:8px;">相似度阈值</label>
+                        <input type="number" id="tcSimilarityThreshold" value="${cfg.similarity_threshold ?? 0.0}" min="0" max="1" step="0.05"
+                            style="width:100%; padding:10px 14px; border:1px solid #e8ecf1; border-radius:8px; font-size:14px; outline:none;">
+                        <div style="font-size:12px; color:#8892a0; margin-top:6px; line-height:1.5;">0 表示不过滤；>0 时只过滤向量召回（BM25 关键词结果始终保留）。单位：向量余弦相似度（多数知识库 0~0.6），建议 0~0.1。</div>
+                    </div>
+                    <div style="margin-bottom:20px;">
+                        <label style="display:block; font-size:14px; font-weight:500; color:#1a1a2e; margin-bottom:8px;">检索策略</label>
+                        <select id="tcStrategy" style="width:100%; padding:10px 14px; border:1px solid #e8ecf1; border-radius:8px; font-size:14px; outline:none; background:white;">
+                            <option value="vector" ${strategy === 'vector' ? 'selected' : ''}>向量检索</option>
+                            <option value="bm25" ${strategy === 'bm25' ? 'selected' : ''}>关键字检索</option>
+                            <option value="hybrid" ${strategy === 'hybrid' ? 'selected' : ''}>混合检索</option>
+                        </select>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px;">
+                        <input type="checkbox" id="tcUseRerank" ${useRerank ? 'checked' : ''} style="width:16px; height:16px; cursor:pointer;">
+                        <label for="tcUseRerank" style="font-size:14px; color:#4b5563; cursor:pointer;">启用重排序</label>
+                    </div>
+                    <div style="padding:14px 16px; background:#f8fafc; border:1px solid #eef2f6; border-radius:10px;">
+                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+                            <input type="checkbox" id="tcEnableRewrite" ${enableRewrite ? 'checked' : ''} style="width:16px; height:16px; cursor:pointer;">
+                            <label for="tcEnableRewrite" style="font-size:14px; font-weight:500; color:#1a1a2e; cursor:pointer;">启用 Query 改写</label>
+                        </div>
+                        <div style="font-size:12px; color:#8892a0; line-height:1.6;">由系统智能选择改写方式（HyDE / 查询扩展 / 子问题分解），无需逐项调参，关闭则不产生额外开销。</div>
+                    </div>
+                `;
+            } else {
+                body.innerHTML = `
+                    <div style="text-align:center; padding:40px 20px; color:#9ca3af; font-size:14px;">
+                        该工具暂无额外配置项
+                    </div>
+                `;
+            }
+        }
+
+        function saveToolConfig() {
+            if (!currentConfigTool) return;
+            const codePath = currentConfigTool.code_path || '';
+            const toolConfigs = getCurrentToolConfigs();
+
+            if (codePath === 'knowledge_search') {
+                const topK = parseInt(document.getElementById('tcTopK').value, 10);
+                const similarityThreshold = parseFloat(document.getElementById('tcSimilarityThreshold').value);
+                const strategy = document.getElementById('tcStrategy').value;
+                const useRerank = document.getElementById('tcUseRerank').checked;
+                const enableRewrite = document.getElementById('tcEnableRewrite') ? document.getElementById('tcEnableRewrite').checked : false;
+                toolConfigs['knowledge_search'] = {
+                    top_k: isNaN(topK) ? 5 : topK,
+                    similarity_threshold: isNaN(similarityThreshold) ? 0.0 : similarityThreshold,
+                    strategy,
+                    use_rerank: useRerank,
+                    enable_query_rewrite: enableRewrite
+                };
+            }
+            showToast('工具配置已保存', 'success');
+            hideToolConfigModal();
+        }
+
+        function hideToolConfigModal() {
+            document.getElementById('toolConfigModal').style.display = 'none';
+            currentConfigTool = null;
+        }
+
+        function confirmToolSelection() {
+            if (currentSelectionContext === 'edit') {
+                updateEditAgentToolsDisplay();
+            } else {
+                updateAgentToolsDisplay();
+            }
+            hideToolSelectModal();
+        }
+
+        // ====== 知识库选择弹窗逻辑 ======
+
+        function getCurrentSelectedKBs() {
+            return currentSelectionContext === 'edit' ? editTempSelectedKBs : tempSelectedKBs;
+        }
+
+        function setCurrentSelectedKBs(val) {
+            if (currentSelectionContext === 'edit') {
+                editTempSelectedKBs = val;
+            } else {
+                tempSelectedKBs = val;
+            }
+        }
+
+        async function showKBSelectModal() {
+            // 判断当前上下文：如果编辑弹窗显示中，则为edit模式
+            currentSelectionContext = (editingAgentId !== null) ? 'edit' : 'create';
+            
+            document.getElementById('kbSelectModal').style.display = 'flex';
+            document.getElementById('kbSearch').value = '';
+            document.getElementById('kbSelectAll').checked = false;
+
+            try {
+                const token = localStorage.getItem('access_token');
+                const res = await fetch('/api/agent/knowledge-bases', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (res.status === 401) {
+                    localStorage.removeItem('access_token');
+                    window.location.href = '/front/login.html';
+                    return;
+                }
+
+                const data = await res.json();
+                allKBs = data.knowledge_bases || [];
+                renderKBList();
+                renderSelectedKBList();
+            } catch (error) {
+                showToast('加载知识库失败', 'error');
+                document.getElementById('kbList').innerHTML = '<div style="text-align:center; padding:40px; color:#9ca3af;">加载失败</div>';
+            }
+        }
+
+        function hideKBSelectModal() {
+            document.getElementById('kbSelectModal').style.display = 'none';
+        }
+
+        function renderKBList() {
+            const searchKeyword = document.getElementById('kbSearch').value.trim().toLowerCase();
+            const filtered = allKBs.filter(kb =>
+                !searchKeyword || kb.name.toLowerCase().includes(searchKeyword)
+            );
+
+            const currentKBs = getCurrentSelectedKBs();
+            const listEl = document.getElementById('kbList');
+            if (filtered.length === 0) {
+                listEl.innerHTML = '<div style="text-align:center; padding:40px; color:#9ca3af;">暂无知识库</div>';
+                return;
+            }
+
+            listEl.innerHTML = filtered.map(kb => {
+                const isSelected = currentKBs.some(k => k.id === kb.id);
+                return `
+                    <div onclick="toggleKB('${kb.id}', '${escapeHtml(kb.name)}', '${kb.embedding_model || ''}')" 
+                         style="display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:8px; cursor:pointer; transition:all 0.15s; background:${isSelected ? 'rgba(64,224,208,0.1)' : 'transparent'}; margin-bottom:4px;"
+                         onmouseover="this.style.background='${isSelected ? 'rgba(64,224,208,0.15)' : '#f0f2f5'}'" 
+                         onmouseout="this.style.background='${isSelected ? 'rgba(64,224,208,0.1)' : 'transparent'}'">
+                        <div style="width:20px; height:20px; border:2px solid ${isSelected ? '#40E0D0' : '#d1d5db'}; border-radius:4px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                            ${isSelected ? '<span style="color:#40E0D0; font-size:12px;">✓</span>' : ''}
+                        </div>
+                        <div style="flex:1; min-width:0;">
+                            <div style="display:flex; align-items:center; gap:6px; margin-bottom:2px;">
+                                <span style="font-size:14px; font-weight:500; color:#1a1a2e; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(kb.name)}</span>
+                            </div>
+                            <div style="font-size:12px; color:#8892a0; display:flex; gap:12px;">
+                                <span>📄 ${kb.doc_count || 0} 个文档</span>
+                                ${kb.embedding_model ? `<span> ${escapeHtml(kb.embedding_model)}</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            updateSelectedCount();
+            updateSelectAllState();
+        }
+
+        function renderSelectedKBList() {
+            const listEl = document.getElementById('selectedKBList');
+            const currentKBs = getCurrentSelectedKBs();
+
+            if (currentKBs.length === 0) {
+                listEl.innerHTML = `
+                    <div style="text-align:center; padding:60px 20px; color:#9ca3af;">
+                        
+                        <div style="font-size:14px;">从左侧选择知识库</div>
+                    </div>
+                `;
+            } else {
+                listEl.innerHTML = currentKBs.map(kb => `
+                    <div style="display:flex; align-items:center; gap:10px; padding:10px 12px; background:white; border-radius:8px; margin-bottom:8px; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                        <div style="flex:1; min-width:0;">
+                            <div style="font-size:13px; font-weight:500; color:#1a1a2e; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(kb.name)}</div>
+                        </div>
+                        <button onclick="removeSelectedKB('${kb.id}')" style="border:none; background:transparent; cursor:pointer; color:#9ca3af; font-size:18px; width:24px; height:24px; display:flex; align-items:center; justify-content:center; border-radius:4px;" onmouseover="this.style.background='#fee2e2'; this.style.color='#ef4444'" onmouseout="this.style.background='transparent'; this.style.color='#9ca3af'">×</button>
+                    </div>
+                `).join('');
+            }
+
+            updateSelectedCount();
+        }
+
+        function updateSelectedCount() {
+            document.getElementById('kbSelectedCount').textContent = getCurrentSelectedKBs().length;
+        }
+
+        function updateSelectAllState() {
+            const searchKeyword = document.getElementById('kbSearch').value.trim().toLowerCase();
+            const filtered = allKBs.filter(kb =>
+                !searchKeyword || kb.name.toLowerCase().includes(searchKeyword)
+            );
+            const currentKBs = getCurrentSelectedKBs();
+            const allSelected = filtered.length > 0 && filtered.every(kb =>
+                currentKBs.some(k => k.id === kb.id)
+            );
+            document.getElementById('kbSelectAll').checked = allSelected;
+        }
+
+        function toggleSelectAll(checked) {
+            const searchKeyword = document.getElementById('kbSearch').value.trim().toLowerCase();
+            const filtered = allKBs.filter(kb =>
+                !searchKeyword || kb.name.toLowerCase().includes(searchKeyword)
+            );
+            let currentKBs = getCurrentSelectedKBs();
+
+            if (checked) {
+                filtered.forEach(kb => {
+                    if (!currentKBs.some(k => k.id === kb.id)) {
+                        currentKBs.push({ id: kb.id, name: kb.name, embedding_model: kb.embedding_model || '' });
+                    }
+                });
+            } else {
+                const idsToRemove = filtered.map(k => k.id);
+                currentKBs = currentKBs.filter(k => !idsToRemove.includes(k.id));
+            }
+
+            setCurrentSelectedKBs(currentKBs);
+            renderKBList();
+            renderSelectedKBList();
+        }
+
+        function toggleKB(id, name, embeddingModel = '') {
+            let currentKBs = getCurrentSelectedKBs();
+            const index = currentKBs.findIndex(k => k.id === id);
+            if (index >= 0) {
+                currentKBs.splice(index, 1);
+            } else {
+                currentKBs.push({ id, name, embedding_model: embeddingModel });
+            }
+            setCurrentSelectedKBs(currentKBs);
+            renderKBList();
+            renderSelectedKBList();
+        }
+
+        function removeSelectedKB(id) {
+            let currentKBs = getCurrentSelectedKBs();
+            const index = currentKBs.findIndex(k => k.id === id);
+            if (index >= 0) {
+                currentKBs.splice(index, 1);
+            }
+            setCurrentSelectedKBs(currentKBs);
+            renderKBList();
+            renderSelectedKBList();
+        }
+
+        function confirmKBSelection() {
+            if (currentSelectionContext === 'edit') {
+                updateEditAgentKBsDisplay();
+            } else {
+                updateAgentKBsDisplay();
+            }
+            hideKBSelectModal();
+        }
+
+        // ====== Agent 编辑弹窗逻辑 ======
+
+        let editingAgentId = null;
+        let editTempSelectedTools = [];
+        let editTempSelectedKBs = [];
+        let editTempToolConfigs = {}; // 编辑态：工具级配置，key=code_path
+        let editMode = 'create'; // 'create' or 'edit'
+
+        async function showEditAgentModal(agentId) {
+            editingAgentId = agentId;
+
+            // 优先拉取最新详情（带时间戳防缓存），避免 /api/agent/agents 列表被浏览器缓存导致配置不回显
+            let agent;
+            try {
+                const res = await Auth.fetch(`/api/agent/agents/${agentId}?_t=${Date.now()}`);
+                if (res.ok) {
+                    agent = await res.json();
+                } else {
+                    console.warn('获取 Agent 详情失败，回退到列表数据');
+                    agent = agents.find(a => a.id === agentId);
+                }
+            } catch (e) {
+                console.warn('拉取 Agent 详情失败，回退到列表数据:', e);
+                agent = agents.find(a => a.id === agentId);
+            }
+            if (!agent) return;
+
+            document.getElementById('editAgentName').value = agent.name || '';
+            const editAvatarVal = agent.avatar || '🤖';
+            document.getElementById('editAgentAvatar').value = editAvatarVal;
+            document.getElementById('editAgentAvatarPreview').innerHTML = renderAgentAvatarContent(editAvatarVal, '🤖');
+            document.getElementById('editAgentDesc').value = agent.desc || '';
+            document.getElementById('editAgentSystemPrompt').value = agent.system_prompt || '';
+            document.getElementById('editAgentTemperature').value = (agent.temperature ?? 0.7);
+            document.getElementById('editAgentTempValue').textContent = Number(agent.temperature ?? 0.7).toFixed(2);
+            document.getElementById('editAgentGreeting').value = agent.greeting || '';
+
+            // 加载工具和知识库：详情接口返回 tool_ids / kb_ids，需要映射出名称
+            try {
+                const [sysData, myData, kbData] = await Promise.all([
+                    Auth.fetch('/api/agent/tools?tool_type=system').then(r => r.json()),
+                    Auth.fetch('/api/agent/tools?tool_type=custom').then(r => r.json()),
+                    Auth.fetch('/api/agent/knowledge-bases').then(r => r.json())
+                ]);
+                const toolMap = {};
+                [...(sysData.tools || []), ...(myData.tools || [])].forEach(t => { toolMap[t.id] = t; });
+                const kbMap = {};
+                (kbData.knowledge_bases || []).forEach(k => { kbMap[k.id] = k; });
+
+                editTempSelectedTools = (agent.tool_ids || []).map(id => {
+                    const t = toolMap[id];
+                    return {
+                        id,
+                        name: t ? t.name : id,
+                        desc: t ? t.desc : '',
+                        tool_type: t ? t.tool_type : 'system',
+                        code_path: t ? t.code_path : ''
+                    };
+                });
+                editTempSelectedKBs = (agent.kb_ids || []).map(id => {
+                    const k = kbMap[id];
+                    return { id, name: k ? k.name : id, embedding_model: k ? (k.embedding_model || '') : '' };
+                });
+            } catch (e) {
+                console.warn('拉取工具/知识库列表失败，回退到空:', e);
+                editTempSelectedTools = [];
+                editTempSelectedKBs = [];
+            }
+            editTempToolConfigs = agent.tool_configs || {};
+            updateEditAgentToolsDisplay();
+            updateEditAgentKBsDisplay();
+
+            document.getElementById('editAgentModal').style.display = 'flex';
+        }
+
+        function hideEditAgentModal() {
+            document.getElementById('editAgentModal').style.display = 'none';
+            editingAgentId = null;
+            editTempSelectedTools = [];
+            editTempSelectedKBs = [];
+        }
+
+        function updateEditAgentToolsDisplay() {
+            const placeholder = document.getElementById('editAgentToolsPlaceholder');
+            const container = document.getElementById('editAgentToolsSelected');
+            if (editTempSelectedTools.length === 0) {
+                placeholder.style.display = 'block';
+                container.style.display = 'none';
+                container.innerHTML = '';
+            } else {
+                placeholder.style.display = 'none';
+                container.style.display = 'flex';
+                container.style.flexWrap = 'wrap';
+                container.style.gap = '6px';
+                container.style.marginTop = '4px';
+                container.innerHTML = editTempSelectedTools.map(t =>
+                    `<span style="display:inline-block; padding:4px 10px; background:linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%); color:white; border-radius:12px; font-size:12px;">${escapeHtml(t.name)}</span>`
+                ).join('');
+            }
+        }
+
+        function updateEditAgentKBsDisplay() {
+            const placeholder = document.getElementById('editAgentKBsPlaceholder');
+            const container = document.getElementById('editAgentKBsSelected');
+            if (editTempSelectedKBs.length === 0) {
+                placeholder.style.display = 'block';
+                container.style.display = 'none';
+                container.innerHTML = '';
+            } else {
+                placeholder.style.display = 'none';
+                container.style.display = 'flex';
+                container.style.flexWrap = 'wrap';
+                container.style.gap = '6px';
+                container.style.marginTop = '4px';
+                container.innerHTML = editTempSelectedKBs.map(k =>
+                    `<span style="display:inline-block; padding:4px 10px; background:linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color:white; border-radius:12px; font-size:12px;">${escapeHtml(k.name)}</span>`
+                ).join('');
+            }
+        }
+
+        async function submitEditAgent() {
+            const name = document.getElementById('editAgentName').value.trim();
+            const desc = document.getElementById('editAgentDesc').value.trim();
+            const systemPrompt = document.getElementById('editAgentSystemPrompt').value.trim();
+            const temperature = parseFloat(document.getElementById('editAgentTemperature').value);
+            const greeting = document.getElementById('editAgentGreeting').value.trim();
+
+            if (!name) {
+                showToast('请输入Agent名称', 'error');
+                return;
+            }
+
+            const toolIds = editTempSelectedTools.map(t => t.id);
+            const hasKS = editTempSelectedTools.some(t => t.code_path === 'knowledge_search');
+            const toolConfigs = {};
+            if (hasKS) {
+                // 编辑时也必须把 knowledge_search 配置完整回传，防止未打开工具配置页时旧配置被覆盖为空
+                toolConfigs['knowledge_search'] = editTempToolConfigs['knowledge_search'] || {
+                    top_k: 5, similarity_threshold: 0.0, strategy: 'hybrid', use_rerank: true, enable_query_rewrite: false
+                };
+            }
+
+            try {
+                const res = await fetch(`/api/agent/agents/${editingAgentId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                    },
+                    body: JSON.stringify({
+                        name,
+                        avatar: document.getElementById('editAgentAvatar').value.trim() || '🤖',
+                        desc,
+                        system_prompt: systemPrompt,
+                        temperature,
+                        tool_ids: toolIds,
+                        kb_ids: editTempSelectedKBs.map(k => k.id),
+                        greeting,
+                        tool_configs: toolConfigs
+                    })
+                });
+
+                if (!res.ok) {
+                    const error = await res.json().catch(() => ({}));
+                    throw new Error(error.message || '更新失败');
+                }
+
+                await res.json();
+
+                hideEditAgentModal();
+                await loadAgents();
+                showToast('更新成功');
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        // ====== 页面初始化 ======
+        window.addEventListener('load', async () => {
+            // 等待Auth.init()完成
+            await new Promise(resolve => setTimeout(resolve, 300));
+            await loadAgents();
+        });
     </script>
+
+    <!-- ====== Agent 创建弹窗 ====== -->
+    <div id="createAgentModal"
+        style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:3000; display:none; justify-content:center; align-items:center;">
+        <div
+            style="background:white; border-radius:16px; width:520px; max-height:90vh; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; padding:20px 24px; border-bottom:1px solid #f0f0f0;">
+                <h3 style="font-size:18px; font-weight:600; color:#1a1a2e;">创建 Agent</h3>
+                <button onclick="hideCreateAgentModal()"
+                    style="background:none; border:none; font-size:20px; color:#999; cursor:pointer; width:32px; height:32px; border-radius:8px;">✕</button>
+            </div>
+            <div style="padding:24px; overflow-y:auto; flex:1;">
+                <div style="margin-bottom:16px;">
+                    <label style="display:block; font-size:13px; color:#666; margin-bottom:6px; font-weight:500;">Agent
+                        名称 *</label>
+                    <input type="text" id="agentName" placeholder="请输入Agent名称"
+                        style="width:100%; padding:10px 14px; border:1px solid #e8ecf1; border-radius:10px; font-size:14px; outline:none; transition:border-color 0.2s;"
+                        onfocus="this.style.borderColor='#40E0D0'" onblur="this.style.borderColor='#e8ecf1'">
+                </div>
+                <div style="margin-bottom:16px;">
+                    <label style="display:block; font-size:13px; color:#666; margin-bottom:6px; font-weight:500;">头像</label>
+                    <div style="display:flex; align-items:center; gap:14px;">
+                        <div class="agent-avatar-upload-wrap"
+                            onclick="document.getElementById('agentAvatarFile').click()">
+                            <div id="agentAvatarPreview" class="agent-avatar-upload-preview">🤖</div>
+                            <div class="agent-avatar-upload-overlay">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                                <span>更换</span>
+                            </div>
+                        </div>
+                        <input type="file" id="agentAvatarFile" accept="image/*" style="display:none"
+                            onchange="uploadAgentAvatar(this,'create')">
+                        <input type="hidden" id="agentAvatar" value="🤖">
+                    </div>
+                </div>
+                <div style="margin-bottom:16px;">
+                    <label style="display:block; font-size:13px; color:#666; margin-bottom:6px; font-weight:500;">Agent
+                        描述</label>
+                    <textarea id="agentDesc" rows="2" placeholder="简单介绍这个Agent的用途（可选）"
+                        style="width:100%; padding:10px 14px; border:1px solid #e8ecf1; border-radius:10px; font-size:14px; outline:none; resize:none; font-family:inherit;"
+                        onfocus="this.style.borderColor='#40E0D0'" onblur="this.style.borderColor='#e8ecf1'"></textarea>
+                </div>
+                <div style="margin-bottom:16px;">
+                    <label style="display:block; font-size:13px; color:#666; margin-bottom:6px; font-weight:500;">提示词
+                        (系统提示)</label>
+                    <textarea id="agentSystemPrompt" rows="3" placeholder="设置Agent的角色和行为规则"
+                        style="width:100%; padding:10px 14px; border:1px solid #e8ecf1; border-radius:10px; font-size:14px; outline:none; resize:none; font-family:inherit;"
+                        onfocus="this.style.borderColor='#40E0D0'" onblur="this.style.borderColor='#e8ecf1'"></textarea>
+                </div>
+                <div style="margin-bottom:16px;">
+                    <label
+                        style="display:flex; justify-content:space-between; align-items:center; font-size:13px; color:#666; margin-bottom:6px; font-weight:500;">
+                        <span>温度 <span style="color:#9ca3af; font-weight:normal; font-size:12px;">(Temperature: 0-1,
+                                值越高回答越有创造性)</span></span>
+                        <span id="agentTempValue" style="color:#40E0D0; font-weight:600;">0.70</span>
+                    </label>
+                    <input type="range" id="agentTemperature" min="0" max="1" step="0.01" value="0.7"
+                        oninput="document.getElementById('agentTempValue').textContent = Number(this.value).toFixed(2)"
+                        style="width:100%; accent-color:#40E0D0;">
+                </div>
+                <div style="margin-bottom:16px;">
+                    <label
+                        style="display:block; font-size:13px; color:#666; margin-bottom:6px; font-weight:500;">工具</label>
+                    <div onclick="showToolSelectModal()"
+                        style="padding:12px; border:1px dashed #e8ecf1; border-radius:10px; cursor:pointer; transition:all 0.2s; min-height:45px;"
+                        onmouseover="this.style.borderColor='#40E0D0'" onmouseout="this.style.borderColor='#e8ecf1'">
+                        <span id="agentToolsPlaceholder" style="color:#9ca3af; font-size:14px;">点击选择工具</span>
+                        <div id="agentToolsSelected" style="display:none;"></div>
+                    </div>
+                </div>
+                <div style="margin-bottom:16px;">
+                    <label
+                        style="display:block; font-size:13px; color:#666; margin-bottom:6px; font-weight:500;">知识库</label>
+                    <div onclick="showKBSelectModal()"
+                        style="padding:12px; border:1px dashed #e8ecf1; border-radius:10px; cursor:pointer; transition:all 0.2s; min-height:45px;"
+                        onmouseover="this.style.borderColor='#40E0D0'" onmouseout="this.style.borderColor='#e8ecf1'">
+                        <span id="agentKBsPlaceholder" style="color:#9ca3af; font-size:14px;">点击选择知识库</span>
+                        <div id="agentKBsSelected" style="display:none;"></div>
+                    </div>
+                </div>
+                <div style="margin-bottom:8px;">
+                    <label
+                        style="display:block; font-size:13px; color:#666; margin-bottom:6px; font-weight:500;">对话开场白</label>
+                    <input type="text" id="agentGreeting" placeholder="设置Agent的开场白（可选）"
+                        style="width:100%; padding:10px 14px; border:1px solid #e8ecf1; border-radius:10px; font-size:14px; outline:none;"
+                        onfocus="this.style.borderColor='#40E0D0'" onblur="this.style.borderColor='#e8ecf1'">
+                </div>
+            </div>
+            <div
+                style="padding:16px 24px; border-top:1px solid #f0f0f0; display:flex; gap:12px; justify-content:flex-end;">
+                <button onclick="hideCreateAgentModal()"
+                    style="padding:10px 20px; border:1px solid #e8ecf1; border-radius:10px; background:white; cursor:pointer; font-size:14px; color:#666;">取消</button>
+                <button onclick="submitCreateAgent()"
+                    style="padding:10px 24px; border:none; border-radius:10px; background:linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%); color:white; cursor:pointer; font-size:14px; font-weight:500;">创建</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 场景模板画廊弹窗 ====== -->
+    <div id="templateGalleryModal"
+        style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:3000; justify-content:center; align-items:center;">
+        <div
+            style="background:white; border-radius:16px; width:640px; max-width:92vw; max-height:88vh; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; padding:20px 24px; border-bottom:1px solid #f0f0f0;">
+                <div>
+                    <h3 style="font-size:18px; font-weight:600; color:#1a1a2e; margin:0;">从模板创建</h3>
+                    <p style="font-size:12px; color:#9ca3af; margin:4px 0 0;">选择一个场景模板，一键生成配置好的 Agent</p>
+                </div>
+                <button onclick="hideTemplateGallery()"
+                    style="background:none; border:none; font-size:20px; color:#999; cursor:pointer; width:32px; height:32px; border-radius:8px;">✕</button>
+            </div>
+            <div style="padding:24px; overflow-y:auto; flex:1;">
+                <div id="templateGalleryList"
+                    style="display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:14px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 编辑Agent弹窗 ====== -->
+    <div id="editAgentModal"
+        style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:3000; display:none; justify-content:center; align-items:center;">
+        <div
+            style="background:white; border-radius:16px; width:520px; max-height:90vh; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; padding:20px 24px; border-bottom:1px solid #f0f0f0;">
+                <h3 style="font-size:18px; font-weight:600; color:#1a1a2e;">编辑 Agent</h3>
+                <button onclick="hideEditAgentModal()"
+                    style="background:none; border:none; font-size:20px; color:#999; cursor:pointer; width:32px; height:32px; border-radius:8px;">✕</button>
+            </div>
+            <div style="padding:24px; overflow-y:auto; flex:1;">
+                <div style="margin-bottom:16px;">
+                    <label style="display:block; font-size:13px; color:#666; margin-bottom:6px; font-weight:500;">Agent
+                        名称 *</label>
+                    <input type="text" id="editAgentName" placeholder="请输入Agent名称"
+                        style="width:100%; padding:10px 14px; border:1px solid #e8ecf1; border-radius:10px; font-size:14px; outline:none; transition:border-color 0.2s;"
+                        onfocus="this.style.borderColor='#40E0D0'" onblur="this.style.borderColor='#e8ecf1'">
+                </div>
+                <div style="margin-bottom:16px;">
+                    <label style="display:block; font-size:13px; color:#666; margin-bottom:6px; font-weight:500;">头像</label>
+                    <div style="display:flex; align-items:center; gap:14px;">
+                        <div class="agent-avatar-upload-wrap"
+                            onclick="document.getElementById('editAgentAvatarFile').click()">
+                            <div id="editAgentAvatarPreview" class="agent-avatar-upload-preview">🤖</div>
+                            <div class="agent-avatar-upload-overlay">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                                <span>更换</span>
+                            </div>
+                        </div>
+                        <input type="file" id="editAgentAvatarFile" accept="image/*" style="display:none"
+                            onchange="uploadAgentAvatar(this,'edit')">
+                        <input type="hidden" id="editAgentAvatar" value="🤖">
+                    </div>
+                </div>
+                <div style="margin-bottom:16px;">
+                    <label style="display:block; font-size:13px; color:#666; margin-bottom:6px; font-weight:500;">Agent
+                        描述</label>
+                    <textarea id="editAgentDesc" rows="2" placeholder="简单介绍这个Agent的用途（可选）"
+                        style="width:100%; padding:10px 14px; border:1px solid #e8ecf1; border-radius:10px; font-size:14px; outline:none; resize:none; font-family:inherit;"
+                        onfocus="this.style.borderColor='#40E0D0'" onblur="this.style.borderColor='#e8ecf1'"></textarea>
+                </div>
+                <div style="margin-bottom:16px;">
+                    <label style="display:block; font-size:13px; color:#666; margin-bottom:6px; font-weight:500;">提示词
+                        (系统提示)</label>
+                    <textarea id="editAgentSystemPrompt" rows="3" placeholder="设置Agent的角色和行为规则"
+                        style="width:100%; padding:10px 14px; border:1px solid #e8ecf1; border-radius:10px; font-size:14px; outline:none; resize:none; font-family:inherit;"
+                        onfocus="this.style.borderColor='#40E0D0'" onblur="this.style.borderColor='#e8ecf1'"></textarea>
+                </div>
+                <div style="margin-bottom:16px;">
+                    <label
+                        style="display:flex; justify-content:space-between; align-items:center; font-size:13px; color:#666; margin-bottom:6px; font-weight:500;">
+                        <span>温度 <span style="color:#9ca3af; font-weight:normal; font-size:12px;">(Temperature: 0-1,
+                                值越高回答越有创造性)</span></span>
+                        <span id="editAgentTempValue" style="color:#40E0D0; font-weight:600;">0.70</span>
+                    </label>
+                    <input type="range" id="editAgentTemperature" min="0" max="1" step="0.01" value="0.7"
+                        oninput="document.getElementById('editAgentTempValue').textContent = Number(this.value).toFixed(2)"
+                        style="width:100%; accent-color:#40E0D0;">
+                </div>
+                <div style="margin-bottom:16px;">
+                    <label
+                        style="display:block; font-size:13px; color:#666; margin-bottom:6px; font-weight:500;">工具</label>
+                    <div onclick="showToolSelectModal()"
+                        style="padding:12px; border:1px dashed #e8ecf1; border-radius:10px; cursor:pointer; transition:all 0.2s; min-height:45px;"
+                        onmouseover="this.style.borderColor='#40E0D0'" onmouseout="this.style.borderColor='#e8ecf1'">
+                        <span id="editAgentToolsPlaceholder" style="color:#9ca3af; font-size:14px;">点击选择工具</span>
+                        <div id="editAgentToolsSelected" style="display:none;"></div>
+                    </div>
+                </div>
+                <div style="margin-bottom:16px;">
+                    <label
+                        style="display:block; font-size:13px; color:#666; margin-bottom:6px; font-weight:500;">知识库</label>
+                    <div onclick="showKBSelectModal()"
+                        style="padding:12px; border:1px dashed #e8ecf1; border-radius:10px; cursor:pointer; transition:all 0.2s; min-height:45px;"
+                        onmouseover="this.style.borderColor='#40E0D0'" onmouseout="this.style.borderColor='#e8ecf1'">
+                        <span id="editAgentKBsPlaceholder" style="color:#9ca3af; font-size:14px;">点击选择知识库</span>
+                        <div id="editAgentKBsSelected" style="display:none;"></div>
+                    </div>
+                </div>
+                <div style="margin-bottom:8px;">
+                    <label
+                        style="display:block; font-size:13px; color:#666; margin-bottom:6px; font-weight:500;">对话开场白</label>
+                    <input type="text" id="editAgentGreeting" placeholder="设置Agent的开场白（可选）"
+                        style="width:100%; padding:10px 14px; border:1px solid #e8ecf1; border-radius:10px; font-size:14px; outline:none;"
+                        onfocus="this.style.borderColor='#40E0D0'" onblur="this.style.borderColor='#e8ecf1'">
+                </div>
+            </div>
+            <div
+                style="padding:16px 24px; border-top:1px solid #f0f0f0; display:flex; gap:12px; justify-content:flex-end;">
+                <button onclick="hideEditAgentModal()"
+                    style="padding:10px 20px; border:1px solid #e8ecf1; border-radius:10px; background:white; cursor:pointer; font-size:14px; color:#666;">取消</button>
+                <button onclick="submitEditAgent()"
+                    style="padding:10px 24px; border:none; border-radius:10px; background:linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%); color:white; cursor:pointer; font-size:14px; font-weight:500;">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 工具选择弹窗 ====== -->
+    <div id="toolSelectModal"
+        style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:3100; display:none; justify-content:center; align-items:center;">
+        <div
+            style="background:white; border-radius:16px; width:520px; max-height:80vh; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; padding:20px 24px; border-bottom:1px solid #f0f0f0;">
+                <h3 style="font-size:18px; font-weight:600; color:#1a1a2e;">选择工具</h3>
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <span style="font-size:13px; color:#9ca3af;">已选 <span id="toolSelectedCount"
+                            style="color:#40E0D0; font-weight:600;">0</span> 个</span>
+                    <button onclick="hideToolSelectModal()"
+                        style="background:none; border:none; font-size:20px; color:#999; cursor:pointer; width:32px; height:32px; border-radius:8px;">✕</button>
+                </div>
+            </div>
+            <div style="padding:16px 24px; display:flex; gap:12px; border-bottom:1px solid #f0f0f0;">
+                <input type="text" id="toolSearch" placeholder="搜索工具..." oninput="renderToolList()"
+                    style="flex:1; padding:8px 14px; border:1px solid #e8ecf1; border-radius:8px; font-size:13px; outline:none;"
+                    onfocus="this.style.borderColor='#40E0D0'" onblur="this.style.borderColor='#e8ecf1'">
+                <div style="display:flex; gap:4px;">
+                    <button id="toolTabSystem" onclick="switchToolTab('system')"
+                        style="padding:6px 14px; border:1px solid #e8ecf1; border-radius:8px; background:#40E0D0; color:white; cursor:pointer; font-size:13px;">系统</button>
+                    <button id="toolTabMy" onclick="switchToolTab('custom')"
+                        style="padding:6px 14px; border:1px solid #e8ecf1; border-radius:8px; background:white; color:#4b5563; cursor:pointer; font-size:13px;">我的</button>
+                </div>
+            </div>
+            <div id="toolList" style="flex:1; overflow-y:auto; padding:8px;"></div>
+            <div
+                style="padding:16px 24px; border-top:1px solid #f0f0f0; display:flex; gap:12px; justify-content:flex-end;">
+                <button onclick="hideToolSelectModal()"
+                    style="padding:8px 16px; border:1px solid #e8ecf1; border-radius:10px; background:white; cursor:pointer; font-size:13px; color:#666;">取消</button>
+                <button onclick="confirmToolSelection()"
+                    style="padding:8px 20px; border:none; border-radius:10px; background:linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%); color:white; cursor:pointer; font-size:13px; font-weight:500;">确认选择</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 工具配置详情弹窗 ====== -->
+    <div id="toolConfigModal"
+        style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:3200; justify-content:center; align-items:center;">
+        <div
+            style="background:white; border-radius:16px; width:480px; max-height:80vh; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; padding:20px 24px; border-bottom:1px solid #f0f0f0;">
+                <h3 style="font-size:18px; font-weight:600; color:#1a1a2e;">工具配置</h3>
+                <button onclick="hideToolConfigModal()"
+                    style="background:none; border:none; font-size:20px; color:#999; cursor:pointer; width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center;"
+                    onmouseover="this.style.background='#f0f2f5'"
+                    onmouseout="this.style.background='transparent'">✕</button>
+            </div>
+            <div id="toolConfigBody" style="flex:1; overflow-y:auto; padding:24px;">
+                <!-- 动态渲染配置表单 -->
+            </div>
+            <div
+                style="padding:16px 24px; border-top:1px solid #f0f0f0; display:flex; gap:12px; justify-content:flex-end;">
+                <button onclick="hideToolConfigModal()"
+                    style="padding:8px 16px; border:1px solid #e8ecf1; border-radius:10px; background:white; cursor:pointer; font-size:13px; color:#666;">取消</button>
+                <button onclick="saveToolConfig()"
+                    style="padding:8px 20px; border:none; border-radius:10px; background:linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%); color:white; cursor:pointer; font-size:13px; font-weight:500;">保存配置</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 知识库选择弹窗 ====== -->
+    <div id="kbSelectModal"
+        style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:3100; justify-content:center; align-items:center;">
+        <div
+            style="background:white; border-radius:16px; width:800px; height:600px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+            <!-- 标题栏 -->
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; padding:20px 24px; border-bottom:1px solid #f0f0f0; flex-shrink:0;">
+                <h3 style="font-size:18px; font-weight:600; color:#1a1a2e;">选择知识库</h3>
+                <button onclick="hideKBSelectModal()"
+                    style="background:none; border:none; font-size:20px; color:#999; cursor:pointer; width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center;"
+                    onmouseover="this.style.background='#f0f2f5'"
+                    onmouseout="this.style.background='transparent'">✕</button>
+            </div>
+
+            <!-- 主内容区：左右布局 -->
+            <div style="flex:1; display:flex; overflow:hidden;">
+                <!-- 左侧：知识库列表 -->
+                <div style="flex:1; display:flex; flex-direction:column; border-right:1px solid #e8ecf1;">
+                    <!-- 搜索框 -->
+                    <div style="padding:12px 16px; border-bottom:1px solid #e8ecf1; flex-shrink:0;">
+                        <div style="position:relative;">
+                            <span
+                                style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#9ca3af; font-size:14px;">🔍</span>
+                            <input type="text" id="kbSearch" placeholder="搜索知识库..." oninput="renderKBList()"
+                                style="width:100%; padding:9px 14px 9px 36px; border:1px solid #e8ecf1; border-radius:8px; font-size:14px; outline:none; background:#f8f9fa;"
+                                onfocus="this.style.borderColor='#40E0D0'" onblur="this.style.borderColor='#e8ecf1'">
+                        </div>
+                    </div>
+
+                    <!-- 路径导航 -->
+                    <div
+                        style="padding:8px 16px; font-size:13px; color:#64748b; display:flex; align-items:center; gap:4px; flex-wrap:wrap;">
+                        <span id="kbPathNavContainer"
+                            style="display:flex; align-items:center; gap:4px; flex-wrap:wrap;"></span>
+                    </div>
+
+                    <!-- 知识库列表 -->
+                    <div id="kbList" style="flex:1; overflow-y:auto; padding:0 8px 8px;"></div>
+
+                    <!-- 底部：全选 -->
+                    <div
+                        style="padding:12px 16px; border-top:1px solid #e8ecf1; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <input type="checkbox" id="kbSelectAll" onchange="toggleSelectAll(this.checked)"
+                                style="width:16px; height:16px; cursor:pointer;">
+                            <label for="kbSelectAll" style="font-size:13px; color:#4b5563; cursor:pointer;">全选</label>
+                        </div>
+                        <button onclick="navigateToFolder(null)"
+                            style="font-size:12px; color:#64748b; background:none; border:none; cursor:pointer; padding:4px 8px; border-radius:4px;"
+                            onmouseover="this.style.background='#f0f2f5'"
+                            onmouseout="this.style.background='transparent'">← 返回根目录</button>
+                    </div>
+                </div>
+
+                <!-- 右侧：已选择的知识库 -->
+                <div style="width:320px; display:flex; flex-direction:column; background:#f8f9fa;">
+                    <div style="padding:12px 16px; border-bottom:1px solid #e8ecf1; flex-shrink:0;">
+                        <span style="font-size:13px; color:#64748b;">已选择: </span>
+                        <span id="kbSelectedCount" style="font-size:14px; font-weight:600; color:#1a1a2e;">0</span>
+                        <span style="font-size:13px; color:#64748b;"> 个知识库</span>
+                    </div>
+
+                    <div id="selectedKBList" style="flex:1; overflow-y:auto; padding:12px;">
+                        <div style="text-align:center; padding:60px 20px; color:#9ca3af;">
+
+                            <div style="font-size:14px;">从左侧选择知识库</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 底部操作栏 -->
+            <div
+                style="padding:16px 24px; border-top:1px solid #f0f0f0; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; background:white;">
+                <div style="display:flex; gap:12px;">
+                    <button onclick="hideKBSelectModal()"
+                        style="padding:8px 20px; border:1px solid #e8ecf1; border-radius:8px; background:white; cursor:pointer; font-size:14px; color:#4b5563;">取消</button>
+                    <button onclick="confirmKBSelection()"
+                        style="padding:8px 20px; border:none; border-radius:8px; background:linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%); color:white; cursor:pointer; font-size:14px; font-weight:500; box-shadow:0 4px 12px rgba(64,224,208,0.3);">确认</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </body>
 
 </html>

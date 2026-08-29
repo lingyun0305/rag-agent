@@ -139,10 +139,24 @@
          * 更新页面上的用户信息显示
          */
         updateUserDisplay() {
+            const userInfo = this.getUserInfo();
             const username = this.getUsername();
-            // 更新头像文字
+            const avatar = userInfo && userInfo.avatar ? userInfo.avatar : '';
+            const fallbackText = username ? username.charAt(0).toUpperCase() : 'U';
             document.querySelectorAll('.sidebar-avatar').forEach(el => {
-                el.textContent = username ? username.charAt(0).toUpperCase() : 'U';
+                if (avatar) {
+                    el.innerHTML = '<img src="' + avatar + '" alt="avatar" style="width:100%;height:100%;object-fit:cover;">';
+                } else {
+                    el.textContent = fallbackText;
+                }
+            });
+            // 同步更新聊天消息中已经渲染的用户头像
+            document.querySelectorAll('.message.user .message-avatar').forEach(el => {
+                if (avatar) {
+                    el.innerHTML = '<img src="' + avatar + '" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:10px;">';
+                } else {
+                    el.textContent = fallbackText;
+                }
             });
         },
 
@@ -151,6 +165,10 @@
          */
         async init() {
             if (location.pathname.includes('/login.html')) return;
+            
+            // 防止重复初始化
+            if (this._initialized) return;
+            this._initialized = true;
 
             const token = this.getToken();
             if (!token) {

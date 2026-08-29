@@ -236,9 +236,28 @@
         .toast.show { display: block; }
         .toast.success { background: #2ed573; }
         .toast.error { background: #ff4757; }
+        .toast.warning { background: #ffa502; }
         @keyframes slideIn { from { opacity: 0; transform: translateX(100%); } to { opacity: 1; transform: translateX(0); } }
+        
+        /* Error Modal */
+        .error-modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.5); display: none;
+            justify-content: center; align-items: center; z-index: 3000;
+        }
+        .error-modal {
+            background: white; border-radius: 16px; padding: 28px;
+            width: 90%; max-width: 500px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+        }
+        .error-modal h3 {
+            font-size: 18px; margin-bottom: 16px; color: #1a202c;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .error-modal-actions {
+            display: flex; justify-content: flex-end; margin-top: 20px; gap: 12px;
+        }
     </style>
-    <script src="/front/js/auth.js?v=20260801"></script>
+    <script src="/front/js/auth.js?v=20260812"></script>
 </head>
 <body>
     <div class="app-container">
@@ -367,31 +386,47 @@
                         <div id="customParams" style="display:none;">
                             <div class="config-form">
                                 <div class="form-row">
-                                    <div class="form-label">分块大小 <span class="help-icon-lg">?</span></div>
+                                    <div class="form-label">切分方式</div>
                                     <div class="form-controls">
-                                        <input type="number" class="form-input" id="chunkSize" value="500" min="50" max="10000" style="width:120px;">
-                                        <span style="font-size:13px;color:#64748b;">字符数</span>
+                                        <div class="radio-group" style="display:flex; flex-direction:row; gap:8px; flex-wrap:wrap;">
+                                            <label style="display:flex; flex-direction:column; cursor:pointer; margin-right:8px;">
+                                                <div style="display:flex; align-items:center;">
+                                                    <input type="radio" name="splitMethod" value="char" checked onchange="onSplitMethodChange('char')">
+                                                    <span style="margin-left:6px;">按长度分块</span>
+                                                </div>
+                                                <div style="font-size:12px; color:#9ca3af; margin-top:3px; padding-left:22px;">按固定字符数切分，适合通用场景</div>
+                                            </label>
+                                            <label style="display:flex; flex-direction:column; cursor:pointer; margin-right:8px;">
+                                                <div style="display:flex; align-items:center;">
+                                                    <input type="radio" name="splitMethod" value="chapter" onchange="onSplitMethodChange('chapter')">
+                                                    <span style="margin-left:6px;">按章节分块</span>
+                                                </div>
+                                                <div style="font-size:12px; color:#9ca3af; margin-top:3px; padding-left:22px;">按Markdown标题或大纲序号切分，无标识时降级语义切分</div>
+                                            </label>
+                                            <label style="display:flex; flex-direction:column; cursor:pointer;">
+                                                <div style="display:flex; align-items:center;">
+                                                    <input type="radio" name="splitMethod" value="semantic" onchange="onSplitMethodChange('semantic')">
+                                                    <span style="margin-left:6px;">按语义分块</span>
+                                                </div>
+                                                <div style="font-size:12px; color:#9ca3af; margin-top:3px; padding-left:22px;">基于句子关键词相似度进行语义分组</div>
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="form-row">
-                                    <div class="form-label">重叠大小 <span class="help-icon-lg">?</span></div>
-                                    <div class="form-controls">
-                                        <input type="number" class="form-input" id="chunkOverlap" value="50" min="0" max="500" style="width:120px;">
-                                        <span style="font-size:13px;color:#64748b;">字符数</span>
+                                <div id="charParams">
+                                    <div class="form-row">
+                                        <div class="form-label">分块大小 <span class="help-icon-lg">?</span></div>
+                                        <div class="form-controls">
+                                            <input type="number" class="form-input" id="chunkSize" value="500" min="50" max="10000" style="width:120px;">
+                                            <span style="font-size:13px;color:#64748b;">字符数</span>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="form-row">
-                                    <div class="form-label">Top K <span class="help-icon-lg">?</span></div>
-                                    <div class="form-controls">
-                                        <input type="number" class="form-input" id="topK" value="6" min="1" max="100" style="width:120px;">
-                                        <span style="font-size:13px;color:#64748b;">条</span>
-                                    </div>
-                                </div>
-                                <div class="form-row">
-                                    <div class="form-label">相似度阈值 <span class="help-icon-lg">?</span></div>
-                                    <div class="form-controls">
-                                        <input type="number" class="form-input" id="scoreThreshold" value="0.0" min="0" max="1" step="0.05" style="width:120px;">
-                                        <span style="font-size:13px;color:#64748b;">(0-1)</span>
+                                    <div class="form-row">
+                                        <div class="form-label">重叠大小 <span class="help-icon-lg">?</span></div>
+                                        <div class="form-controls">
+                                            <input type="number" class="form-input" id="chunkOverlap" value="50" min="0" max="500" style="width:120px;">
+                                            <span style="font-size:13px;color:#64748b;">字符数</span>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="form-row">
@@ -422,6 +457,19 @@
 
     <!-- Toast -->
     <div class="toast" id="toast"></div>
+    
+    <!-- Error Modal -->
+    <div class="error-modal-overlay" id="errorModal">
+        <div class="error-modal">
+            <h3>⚠️ 部分文件预览失败</h3>
+            <div id="errorModalContent"></div>
+            <div class="error-modal-actions">
+                <button class="btn btn-primary" onclick="closeErrorModal()">
+                    继续下一步
+                </button>
+            </div>
+        </div>
+    </div>
 
     <script>
     const urlParams = new URLSearchParams(window.location.search);
@@ -440,7 +488,8 @@
         separators: ["\n\n", "\n", "。", "，", " "],
         top_k: 6,
         score_threshold: 0.0,
-        embedding_model: "bge"
+        embedding_model: "bge",
+        split_method: "char"
     };
 
     // 读取上传文件信息（含 batch_id）
@@ -470,26 +519,44 @@
             customParams.style.display = 'block';
             config.chunk_size = parseInt(document.getElementById('chunkSize').value) || 500;
             config.chunk_overlap = parseInt(document.getElementById('chunkOverlap').value) || 50;
-            config.top_k = parseInt(document.getElementById('topK').value) || 6;
-            config.score_threshold = parseFloat(document.getElementById('scoreThreshold').value) || 0.0;
             config.embedding_model = document.getElementById('embeddingModel').value || 'bge';
+            const checked = document.querySelector('input[name="splitMethod"]:checked');
+            config.split_method = checked ? checked.value : 'char';
+            onSplitMethodChange(config.split_method);
         } else {
             customParams.style.display = 'none';
             config.chunk_size = 500;
             config.chunk_overlap = 50;
             config.separators = ["\n\n", "\n", "。", "，", " "];
-            config.top_k = 6;
-            config.score_threshold = 0.0;
             config.embedding_model = "bge";
+            config.split_method = "char";
+        }
+    }
+
+    function onSplitMethodChange(method) {
+        config.split_method = method;
+        const charParams = document.getElementById('charParams');
+        if (method === 'char') {
+            charParams.style.display = '';
+            config.chunk_size = parseInt(document.getElementById('chunkSize').value) || 500;
+            config.chunk_overlap = parseInt(document.getElementById('chunkOverlap').value) || 50;
+        } else {
+            charParams.style.display = 'none';
+            config.chunk_size = 500;
+            config.chunk_overlap = 50;
         }
     }
 
     function saveCustomParams() {
         config.chunk_size = parseInt(document.getElementById('chunkSize').value) || 500;
         config.chunk_overlap = parseInt(document.getElementById('chunkOverlap').value) || 50;
-        config.top_k = parseInt(document.getElementById('topK').value) || 6;
-        config.score_threshold = parseFloat(document.getElementById('scoreThreshold').value) || 0.0;
         config.embedding_model = document.getElementById('embeddingModel').value || 'bge';
+        const checked = document.querySelector('input[name="splitMethod"]:checked');
+        config.split_method = checked ? checked.value : 'char';
+        if (config.split_method !== 'char') {
+            config.chunk_size = 500;
+            config.chunk_overlap = 50;
+        }
     }
 
     async function goToNextStep() {
@@ -522,7 +589,8 @@
                         separators: config.separators,
                         top_k: config.top_k,
                         score_threshold: config.score_threshold,
-                        embedding_model: config.embedding_model
+                        embedding_model: config.embedding_model,
+                        split_method: config.split_method
                     })
                 });
 
@@ -579,20 +647,65 @@
         
         sessionStorage.setItem('upload_config', JSON.stringify(config));
 
-        // 将失败的文件从 uploaded_files 中移除
+        // 找出失败的文件
         const successBatchIds = new Set(allPreviews.map(p => p._batch_id));
+        const failedFiles = uploadedFiles.filter(f => !successBatchIds.has(f.batch_id));
+        
+        // 将成功的文件保存
         const remainingFiles = uploadedFiles.filter(f => successBatchIds.has(f.batch_id));
         sessionStorage.setItem('uploaded_files', JSON.stringify(remainingFiles));
-        console.log('[upload_params] uploaded_files 更新后:', remainingFiles.length, '个文件');
+        console.log('[upload_params] 预览成功:', remainingFiles.length, '个文件');
+        console.log('[upload_params] 预览失败:', failedFiles.length, '个文件');
+        
+        // 如果有失败的文件，显示详细错误信息
+        if (failedCount > 0) {
+            console.warn('[upload_params] 预览失败详情:', failedFiles);
+            const failedMsg = failedFiles.map(f => 
+                `<li style="margin-bottom:8px;"><strong>${f.name}</strong><br><span style="color:#dc3545;font-size:13px;">${f._error || '未知错误'}</span></li>`
+            ).join('');
+            
+            showErrorModal(failedCount, allPreviews.length, failedMsg);
+            return;  // 不自动跳转，等用户确认
+        }
 
-        const successMsg = failedCount > 0
-            ? `${allPreviews.length} 个预览成功，${failedCount} 个失败`
-            : `${allPreviews.length} 个文件预览生成成功`;
-        showToast(successMsg, failedCount > 0 ? 'error' : 'success');
+        const successMsg = `${allPreviews.length} 个文件预览生成成功`;
+        showToast(successMsg, 'success');
 
         setTimeout(() => {
             location.href = `/front/upload_preview.html?kb_id=${kbId}&v=20260802`;
         }, 500);
+    }
+    
+    function showErrorModal(failedCount, successCount, failedItems) {
+        const modal = document.getElementById('errorModal');
+        const modalContent = document.getElementById('errorModalContent');
+        
+        modalContent.innerHTML = `
+            <div style="margin-bottom:16px;">
+                <p style="font-size:15px;margin:0 0 12px 0;">
+                    <span style="color:#28a745;font-weight:bold;">${successCount} 个预览成功</span>，
+                    <span style="color:#dc3545;font-weight:bold;">${failedCount} 个失败</span>
+                </p>
+            </div>
+            <div style="background:#fff5f5;border:1px solid #fed7d7;border-radius:8px;padding:16px;margin-bottom:20px;">
+                <div style="font-weight:600;color:#c53030;margin-bottom:10px;">❌ 失败的文件：</div>
+                <ul style="margin:0;padding-left:20px;">
+                    ${failedItems}
+                </ul>
+            </div>
+            <p style="font-size:13px;color:#718096;margin:0;">
+                成功的文件将继续下一步，您可以稍后重新上传失败的文件。
+            </p>
+        `;
+        
+        modal.style.display = 'flex';
+    }
+    
+    function closeErrorModal() {
+        document.getElementById('errorModal').style.display = 'none';
+        // 继续跳转到下一步（只处理成功的文件）
+        const kbId = new URLSearchParams(window.location.search).get('kb_id') || '';
+        location.href = `/front/upload_preview.html?kb_id=${kbId}&v=20260802`;
     }
 
     function showToast(message, type = 'success') {

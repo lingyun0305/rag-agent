@@ -237,7 +237,7 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
     </style>
-    <script src="/front/js/auth.js?v=20260801"></script>
+    <script src="/front/js/auth.js?v=20260812"></script>
 </head>
 <body>
     <div class="app-container">
@@ -357,31 +357,47 @@
                         <div id="customParams" style="display:none;">
                             <div class="config-form">
                                 <div class="form-row">
-                                    <div class="form-label">分块大小 <span class="help-icon-lg">?</span></div>
+                                    <div class="form-label">切分方式</div>
                                     <div class="form-controls">
-                                        <input type="number" class="form-input" id="chunkSize" value="500" min="50" max="10000" style="width:120px;">
-                                        <span style="font-size:13px;color:#64748b;">字符数</span>
+                                        <div class="radio-group" style="display:flex; flex-direction:row; gap:8px; flex-wrap:wrap;">
+                                                <label style="display:flex; flex-direction:column; cursor:pointer; margin-right:8px;">
+                                                    <div style="display:flex; align-items:center;">
+                                                        <input type="radio" name="splitMethod" value="char" checked onchange="onSplitMethodChange('char')">
+                                                        <span style="margin-left:6px;">按长度分块</span>
+                                                    </div>
+                                                    <div style="font-size:12px; color:#9ca3af; margin-top:3px; padding-left:22px;">按固定字符数切分，适合通用场景</div>
+                                                </label>
+                                                <label style="display:flex; flex-direction:column; cursor:pointer; margin-right:8px;">
+                                                    <div style="display:flex; align-items:center;">
+                                                        <input type="radio" name="splitMethod" value="chapter" onchange="onSplitMethodChange('chapter')">
+                                                        <span style="margin-left:6px;">按章节分块</span>
+                                                    </div>
+                                                    <div style="font-size:12px; color:#9ca3af; margin-top:3px; padding-left:22px;">按Markdown标题或大纲序号切分，无标识时降级语义切分</div>
+                                                </label>
+                                                <label style="display:flex; flex-direction:column; cursor:pointer;">
+                                                    <div style="display:flex; align-items:center;">
+                                                        <input type="radio" name="splitMethod" value="semantic" onchange="onSplitMethodChange('semantic')">
+                                                        <span style="margin-left:6px;">按语义分块</span>
+                                                    </div>
+                                                    <div style="font-size:12px; color:#9ca3af; margin-top:3px; padding-left:22px;">基于句子关键词相似度进行语义分组</div>
+                                                </label>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="form-row">
-                                    <div class="form-label">重叠大小 <span class="help-icon-lg">?</span></div>
-                                    <div class="form-controls">
-                                        <input type="number" class="form-input" id="chunkOverlap" value="50" min="0" max="500" style="width:120px;">
-                                        <span style="font-size:13px;color:#64748b;">字符数</span>
+                                <div id="charParams">
+                                    <div class="form-row">
+                                        <div class="form-label">分块大小 <span class="help-icon-lg">?</span></div>
+                                        <div class="form-controls">
+                                            <input type="number" class="form-input" id="chunkSize" value="500" min="50" max="10000" style="width:120px;">
+                                            <span style="font-size:13px;color:#64748b;">字符数</span>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="form-row">
-                                    <div class="form-label">Top K <span class="help-icon-lg">?</span></div>
-                                    <div class="form-controls">
-                                        <input type="number" class="form-input" id="topK" value="6" min="1" max="100" style="width:120px;">
-                                        <span style="font-size:13px;color:#64748b;">条</span>
-                                    </div>
-                                </div>
-                                <div class="form-row">
-                                    <div class="form-label">相似度阈值 <span class="help-icon-lg">?</span></div>
-                                    <div class="form-controls">
-                                        <input type="number" class="form-input" id="scoreThreshold" value="0.0" min="0" max="1" step="0.05" style="width:120px;">
-                                        <span style="font-size:13px;color:#64748b;">(0-1)</span>
+                                    <div class="form-row">
+                                        <div class="form-label">重叠大小 <span class="help-icon-lg">?</span></div>
+                                        <div class="form-controls">
+                                            <input type="number" class="form-input" id="chunkOverlap" value="50" min="0" max="500" style="width:120px;">
+                                            <span style="font-size:13px;color:#64748b;">字符数</span>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="form-row">
@@ -429,7 +445,8 @@
         separators: ["\n\n", "\n", "。", "，", " "],
         top_k: 6,
         score_threshold: 0.0,
-        embedding_model: "bge"
+        embedding_model: "bge",
+        split_method: "char"
     };
 
     function goBack() {
@@ -451,26 +468,44 @@
             customParams.style.display = 'block';
             config.chunk_size = parseInt(document.getElementById('chunkSize').value) || 500;
             config.chunk_overlap = parseInt(document.getElementById('chunkOverlap').value) || 50;
-            config.top_k = parseInt(document.getElementById('topK').value) || 6;
-            config.score_threshold = parseFloat(document.getElementById('scoreThreshold').value) || 0.0;
             config.embedding_model = document.getElementById('embeddingModel').value || 'bge';
+            const checked = document.querySelector('input[name="splitMethod"]:checked');
+            config.split_method = checked ? checked.value : 'char';
+            onSplitMethodChange(config.split_method);
         } else {
             customParams.style.display = 'none';
             config.chunk_size = 500;
             config.chunk_overlap = 50;
             config.separators = ["\n\n", "\n", "。", "，", " "];
-            config.top_k = 6;
-            config.score_threshold = 0.0;
             config.embedding_model = "bge";
+            config.split_method = "char";
+        }
+    }
+
+    function onSplitMethodChange(method) {
+        config.split_method = method;
+        const charParams = document.getElementById('charParams');
+        if (method === 'char') {
+            charParams.style.display = '';
+            config.chunk_size = parseInt(document.getElementById('chunkSize').value) || 500;
+            config.chunk_overlap = parseInt(document.getElementById('chunkOverlap').value) || 50;
+        } else {
+            charParams.style.display = 'none';
+            config.chunk_size = 500;
+            config.chunk_overlap = 50;
         }
     }
 
     function saveCustomParams() {
         config.chunk_size = parseInt(document.getElementById('chunkSize').value) || 500;
         config.chunk_overlap = parseInt(document.getElementById('chunkOverlap').value) || 50;
-        config.top_k = parseInt(document.getElementById('topK').value) || 6;
-        config.score_threshold = parseFloat(document.getElementById('scoreThreshold').value) || 0.0;
         config.embedding_model = document.getElementById('embeddingModel').value || 'bge';
+        const checked = document.querySelector('input[name="splitMethod"]:checked');
+        config.split_method = checked ? checked.value : 'char';
+        if (config.split_method !== 'char') {
+            config.chunk_size = 500;
+            config.chunk_overlap = 50;
+        }
     }
 
     async function loadDocConfig() {
@@ -506,27 +541,26 @@
             if (docConfig.chunk_overlap !== undefined) {
                 config.chunk_overlap = docConfig.chunk_overlap;
             }
-            if (docConfig.top_k !== undefined) {
-                config.top_k = docConfig.top_k;
-            }
-            if (docConfig.score_threshold !== undefined) {
-                config.score_threshold = docConfig.score_threshold;
-            }
             if (docConfig.embedding_model) {
                 config.embedding_model = docConfig.embedding_model;
             }
             if (docConfig.separators) {
                 config.separators = docConfig.separators;
             }
+            if (docConfig.split_method) {
+                config.split_method = docConfig.split_method;
+            }
 
             if (config.chunk_size !== 500 || config.chunk_overlap !== 50 || 
-                config.top_k !== 6 || config.score_threshold !== 0.0 ||
-                config.embedding_model !== 'bge') {
+                config.embedding_model !== 'bge' || config.split_method !== 'char') {
                 selectChunkParam('custom');
                 document.getElementById('chunkSize').value = config.chunk_size;
                 document.getElementById('chunkOverlap').value = config.chunk_overlap;
-                document.getElementById('topK').value = config.top_k;
-                document.getElementById('scoreThreshold').value = config.score_threshold;
+                const radio = document.querySelector(`input[name="splitMethod"][value="${config.split_method}"]`);
+                if (radio) {
+                    radio.checked = true;
+                }
+                onSplitMethodChange(config.split_method);
             }
 
             showToast('配置加载成功', 'success');
@@ -564,7 +598,8 @@
                     separators: config.separators,
                     top_k: config.top_k,
                     score_threshold: config.score_threshold,
-                    embedding_model: config.embedding_model
+                    embedding_model: config.embedding_model,
+                    split_method: config.split_method
                 })
             });
 
