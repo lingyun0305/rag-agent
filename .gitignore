@@ -11,6 +11,7 @@ build/
 .env
 .env.local
 .env.*
+!.env.example
 backend/.env
 
 # ====== 虚拟环境 ======
@@ -55,6 +56,8 @@ models/
 test_*.py
 *_test.py
 tests/
+!backend/tests/
+!backend/tests/*.py
 
 # ====== 临时文件 ======
 tmp/
@@ -76,5 +79,25 @@ desktop.ini
 *.tar.gz
 *.rar
 
-# ====== 文档导出文件（临时） ======
+# ====== 文档导出文件 ======
 API文档.docx
+
+# ====== 与项目无关的本地/工具文件 ======
+# WorkBuddy agent 工作区数据（记忆/技能/配置，非项目源码）
+.workbuddy/
+# Python 安装引导脚本
+get-pip.py
+# pytest 缓存
+.pytest_cache/
+# Pip 缓存/锁文件
+pip-log.txt
+*.egg-link
+
+# ====== 评测生成产物（运行评测自动生成，非源码，勿提交） ======
+backend/eval/reports/
+# 评测运行日志（*.log 已全局忽略，此处按目录再兜底）
+eval_run_logs/
+
+# ====== 依赖安装产物（pip install 时产生的文档/share 等，非项目源码）======
+backend/share/
+

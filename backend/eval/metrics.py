@@ -4,7 +4,7 @@
 计算：召回准确率、幻觉率、工具调用准确率、上下文压缩节省比例等
 """
 
-from typing import Dict, Any, List, Optional
+from typing import Any
 
 
 class EvaluationMetrics:
@@ -26,7 +26,7 @@ class EvaluationMetrics:
     def calculate_answer_match(
         self,
         answer: str,
-        expect_keywords: List[str],
+        expect_keywords: list[str],
         match_type: str = "any",
     ) -> bool:
         """
@@ -53,9 +53,9 @@ class EvaluationMetrics:
 
     def calculate_tool_accuracy(
         self,
-        actual_tools: List[str],
-        expected_tools: List[str],
-    ) -> Dict[str, Any]:
+        actual_tools: list[str],
+        expected_tools: list[str],
+    ) -> dict[str, Any]:
         """
         计算工具调用准确率
 
@@ -106,9 +106,9 @@ class EvaluationMetrics:
     def calculate_hallucination(
         self,
         answer: str,
-        expect_keywords: List[str],
+        expect_keywords: list[str],
         is_hallucination_if_answer: bool = False,
-        retrieved_docs: List[str] = None,
+        retrieved_docs: list[str] = None,
     ) -> bool:
         """
         判断是否存在幻觉
@@ -125,7 +125,9 @@ class EvaluationMetrics:
         # 如果应该拒绝回答但回答了（且没有匹配拒绝关键词），视为幻觉
         if is_hallucination_if_answer:
             # 检查是否包含拒绝关键词
-            refuse_keywords = ["不知道", "未找到", "无法回答", "无法提供", "不存在", "不清楚"]
+            refuse_keywords = ["不知道", "未找到", "无法回答", "无法提供", "不能提供", "不存在",
+                               "不清楚", "未提及", "未查询到", "暂无相关信息", "暂无",
+                               "未提供相关信息", "没有相关信息"]
             answer_lower = answer.lower()
             has_refuse = any(kw in answer_lower for kw in refuse_keywords)
 
@@ -171,9 +173,9 @@ class EvaluationMetrics:
 
     def evaluate_single_case(
         self,
-        case: Dict[str, Any],
-        result: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        case: dict[str, Any],
+        result: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         评估单个测试用例
 
@@ -187,6 +189,16 @@ class EvaluationMetrics:
         answer = result.get("answer", "")
         actual_tools = result.get("called_tools", [])
         retrieved_docs = result.get("retrieved_docs", [])
+
+        # 接地诊断（仅诊断，不影响评分）：期望关键词是否真的出现在检索到的文档中。
+        # 用于判断 Agent 是否"真的走了 RAG"，而非凭参数记忆硬答。
+        grounded = None
+        if retrieved_docs and case.get("expect_keywords"):
+            doc_text = "\n".join(
+                doc.get("content", "") if isinstance(doc, dict) else str(doc)
+                for doc in retrieved_docs
+            ).lower()
+            grounded = any(kw.lower() in doc_text for kw in case["expect_keywords"])
 
         # 答案匹配
         answer_match = self.calculate_answer_match(
@@ -205,7 +217,14 @@ class EvaluationMetrics:
             answer=answer,
             expect_keywords=case.get("expect_keywords", []),
             is_hallucination_if_answer=case.get("is_hallucination_if_answer", False),
-            retrieved_docs=[doc.get("content", "") for doc in retrieved_docs] if retrieved_docs else None,
+            retrieved_docs=(
+                [
+                    doc.get("content", "") if isinstance(doc, dict) else str(doc)
+                    for doc in retrieved_docs
+                ]
+                if retrieved_docs
+                else None
+            ),
         )
 
         # 综合评分
@@ -226,14 +245,15 @@ class EvaluationMetrics:
             "tool_accuracy": tool_metrics,
             "is_hallucination": is_hallucination,
             "score": score,
+            "grounded": grounded,
             "answer": answer[:200],
             "actual_tools": actual_tools,
         }
 
     def aggregate_results(
         self,
-        evaluations: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        evaluations: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         """
         聚合所有评估结果，计算总体指标
 
@@ -253,6 +273,8 @@ class EvaluationMetrics:
         answer_match_count = 0
         tool_correct_count = 0
         hallucination_count = 0
+        grounded_total = 0
+        grounded_true = 0
 
         for eval_result in evaluations:
             case_type = eval_result["type"]
@@ -264,6 +286,8 @@ class EvaluationMetrics:
                     "answer_match": 0,
                     "tool_correct": 0,
                     "hallucination": 0,
+                    "grounded_true": 0,
+                    "grounded_total": 0,
                     "avg_score": 0,
                 }
 
@@ -283,6 +307,16 @@ class EvaluationMetrics:
                 type_stats[case_type]["hallucination"] += 1
                 hallucination_count += 1
 
+            # 接地率统计（仅诊断）
+            g = eval_result.get("grounded")
+            if g is not None:
+                type_stats[case_type]["grounded_total"] += 1
+                if g:
+                    type_stats[case_type]["grounded_true"] += 1
+                grounded_total += 1
+                if g:
+                    grounded_true += 1
+
             total_score += eval_result["score"]
 
         # 计算平均值
@@ -297,6 +331,14 @@ class EvaluationMetrics:
             type_stats[case_type]["hallucination_rate"] = (
                 type_stats[case_type]["hallucination"] / type_stats[case_type]["total"]
             )
+            # 接地率（仅诊断）
+            if type_stats[case_type]["grounded_total"] > 0:
+                type_stats[case_type]["grounding_rate"] = (
+                    type_stats[case_type]["grounded_true"]
+                    / type_stats[case_type]["grounded_total"]
+                )
+            else:
+                type_stats[case_type]["grounding_rate"] = None
 
         # 总体指标
         overall = {
@@ -305,6 +347,7 @@ class EvaluationMetrics:
             "answer_match_rate": answer_match_count / total,
             "tool_correct_rate": tool_correct_count / total,
             "hallucination_rate": hallucination_count / total,
+            "grounding_rate": (grounded_true / grounded_total) if grounded_total else None,
         }
 
         return {
@@ -313,7 +356,7 @@ class EvaluationMetrics:
             "total_evaluations": evaluations,
         }
 
-    def generate_report(self, aggregated: Dict[str, Any]) -> str:
+    def generate_report(self, aggregated: dict[str, Any]) -> str:
         """
         生成评测报告（Markdown 表格）
 
@@ -334,15 +377,23 @@ class EvaluationMetrics:
         report += f"| 平均分数 | {overall['avg_score']:.2f} |\n"
         report += f"| 答案匹配率 | {overall['answer_match_rate']:.2%} |\n"
         report += f"| 工具调用准确率 | {overall['tool_correct_rate']:.2%} |\n"
-        report += f"| 幻觉率 | {overall['hallucination_rate']:.2%} |\n\n"
+        report += f"| 幻觉率 | {overall['hallucination_rate']:.2%} |\n"
+        if overall.get("grounding_rate") is not None:
+            report += f"| 接地率(检索命中期望关键词) | {overall['grounding_rate']:.2%} |\n"
+        report += "\n"
 
         # 按类型统计
         report += "## 按类型统计\n\n"
-        report += "| 类型 | 用例数 | 平均分 | 答案匹配率 | 工具准确率 | 幻觉率 |\n"
-        report += "|------|--------|--------|------------|------------|--------|\n"
+        report += "| 类型 | 用例数 | 平均分 | 答案匹配率 | 工具准确率 | 幻觉率 | 接地率 |\n"
+        report += "|------|--------|--------|------------|------------|--------|--------|\n"
 
         for case_type, stats in aggregated["by_type"].items():
-            report += f"| {case_type} | {stats['total']} | {stats['avg_score']:.2f} | {stats['answer_match_rate']:.2%} | {stats['tool_correct_rate']:.2%} | {stats['hallucination_rate']:.2%} |\n"
+            gr = (
+                f"{stats['grounding_rate']:.2%}"
+                if stats.get("grounding_rate") is not None
+                else "-"
+            )
+            report += f"| {case_type} | {stats['total']} | {stats['avg_score']:.2f} | {stats['answer_match_rate']:.2%} | {stats['tool_correct_rate']:.2%} | {stats['hallucination_rate']:.2%} | {gr} |\n"
 
         return report
 
