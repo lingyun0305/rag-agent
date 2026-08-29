@@ -1,0 +1,18 @@
+[project]
+name = "rag-ai-chat"
+version = "0.1.0"
+description = "企业知识库 + Agent RAG 平台"
+requires-python = ">=3.10"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = [".venv", "__pycache__", ".workbuddy", "venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP", "B"]
+ignore = ["E501", "B008", "B904", "B905", "UP045"]
+
+[tool.black]
+line-length = 100
+extend-exclude = '''/.venv|/.workbuddy|/venv'''
