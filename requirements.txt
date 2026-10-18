@@ -26,7 +26,7 @@ langchain-core>=0.1.0
 langchain-openai>=0.1.0
 langchain-classic>=0.2.0
 
-# LangGraph (ReAct Agent 核心)
+# LangGraph（多范式编排对照实验用，见 backend/app/agent/langgraph_agent.py）
 langgraph>=0.0.20
 
 sentence-transformers>=2.2.2
@@ -37,10 +37,27 @@ jieba>=0.42.1
 dashscope>=1.19.0
 
 # 文本加载
-pypdf>=4.0.0
 openpyxl>=3.1.0
 docx2txt>=0.8
+unstructured>=0.10.0
+markdown>=3.4.0
 
 #JWT鉴权
 pyjwt>=2.8.0
 passlib[bcrypt]>=1.7.4
+
+# 日志
+loguru>=0.7.0
+
+# API 限流
+slowapi>=0.1.9
+
+# ===== 可选：RAG 检索评测 (Ragas LLM-judge 指标) =====
+# 离线环境可不装；装了且在联网 + 配置 LLM 后，run_rag_eval.py --ragas 才会启用。
+# ragas>=0.1.0
+# datasets>=2.0.0
+
+# 开发/工程规范依赖
+ruff>=0.6.0
+black>=24.0
+pre-commit>=3.7

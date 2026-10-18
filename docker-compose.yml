@@ -6,17 +6,33 @@ services:
     build: .
     container_name: rag-agent-api
     env_file: .env
+    # 容器内地址覆盖：
+    #   - MySQL / Redis 是同 compose 网络里的独立服务，用服务名互访（不是 localhost）
+    #   - llama.cpp 跑在宿主机上，Windows/Mac Docker Desktop 用 host.docker.internal 访问
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: "3306"
+      MYSQL_USER: rag_agent
+      MYSQL_PASSWORD: rag_agent_pw
+      MYSQL_DATABASE: rag_agent_db
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      LOCAL_MODEL_BASE_URL: http://host.docker.internal:8080/v1
     ports:
       - "8000:8000"
     depends_on:
-      - mysql
-      - redis
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # Linux 下也能解析到宿主机
     volumes:
       - ./chroma_db:/app/chroma_db
-      - ./knowledge_base:/app/knowledge_base
+      - ./knowledge_files:/app/knowledge_files
+      - ./uploads:/app/uploads
       - ./backend:/app/backend
       - ./front:/app/front
-      - ./static:/app/static
     restart: unless-stopped
 
   # MySQL 数据库
@@ -24,14 +40,19 @@ services:
     image: mysql:8.0
     container_name: rag-agent-mysql
     environment:
-      MYSQL_ROOT_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: rag_agent_root_pw
       MYSQL_DATABASE: rag_agent_db
-      MYSQL_USER: root
-      MYSQL_PASSWORD: password
+      MYSQL_USER: rag_agent
+      MYSQL_PASSWORD: rag_agent_pw
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-prag_agent_root_pw"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
     restart: unless-stopped
 
   # Redis 缓存

@@ -5,9 +5,9 @@
 """
 
 import time
-from typing import Dict, Any, Optional
-from contextlib import contextmanager, asynccontextmanager
+from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
+from typing import Any
 
 from backend.app.common.logger import logger
 
@@ -15,6 +15,7 @@ from backend.app.common.logger import logger
 @dataclass
 class RequestStats:
     """请求统计数据"""
+
     request_id: str = ""
     mode: str = ""
     model: str = ""
@@ -27,7 +28,7 @@ class RequestStats:
     completion_tokens: int = 0
     total_tokens: int = 0
     llm_calls: int = 0
-    extra: Dict[str, Any] = field(default_factory=dict)
+    extra: dict[str, Any] = field(default_factory=dict)
 
     def to_log_str(self) -> str:
         parts = [
@@ -38,7 +39,9 @@ class RequestStats:
             parts.append(f"【TTFT】{self.ttft_ms:.0f}ms")
         parts.append(f"【总耗时】{self.duration_ms:.0f}ms")
         if self.total_tokens > 0:
-            parts.append(f"【Token】输入{self.prompt_tokens} / 输出{self.completion_tokens} / 总计{self.total_tokens}")
+            parts.append(
+                f"【Token】输入{self.prompt_tokens} / 输出{self.completion_tokens} / 总计{self.total_tokens}"
+            )
         if self.llm_calls > 0:
             parts.append(f"【LLM调用次数】{self.llm_calls}")
         if self.extra:
@@ -59,7 +62,7 @@ class RequestStatsTracker:
         异步上下文管理器，追踪请求耗时和token
 
         Args:
-            mode: 请求模式（chat/traditional/agent）
+            mode: 请求模式（chat/agent）
             model: 使用的模型
             request_id: 请求ID
         """
@@ -76,7 +79,7 @@ class RequestStatsTracker:
             stats.duration_ms = (stats.end_time - stats.start_time) * 1000
             logger.info(f"【请求统计】{stats.to_log_str()}")
 
-    def add_token_usage(self, stats: RequestStats, usage_metadata: Optional[Dict]):
+    def add_token_usage(self, stats: RequestStats, usage_metadata: dict | None):
         """
         从 LangChain 的 usage_metadata 中提取 token 信息
 
@@ -87,12 +90,20 @@ class RequestStatsTracker:
         if not usage_metadata:
             return
         if isinstance(usage_metadata, dict):
-            input_tokens = usage_metadata.get("input_tokens", usage_metadata.get("prompt_tokens", 0))
-            output_tokens = usage_metadata.get("output_tokens", usage_metadata.get("completion_tokens", 0))
+            input_tokens = usage_metadata.get(
+                "input_tokens", usage_metadata.get("prompt_tokens", 0)
+            )
+            output_tokens = usage_metadata.get(
+                "output_tokens", usage_metadata.get("completion_tokens", 0)
+            )
             total_tokens = usage_metadata.get("total_tokens", input_tokens + output_tokens)
         else:
-            input_tokens = getattr(usage_metadata, "input_tokens", getattr(usage_metadata, "prompt_tokens", 0))
-            output_tokens = getattr(usage_metadata, "output_tokens", getattr(usage_metadata, "completion_tokens", 0))
+            input_tokens = getattr(
+                usage_metadata, "input_tokens", getattr(usage_metadata, "prompt_tokens", 0)
+            )
+            output_tokens = getattr(
+                usage_metadata, "output_tokens", getattr(usage_metadata, "completion_tokens", 0)
+            )
             total_tokens = getattr(usage_metadata, "total_tokens", input_tokens + output_tokens)
 
         stats.prompt_tokens += int(input_tokens or 0)

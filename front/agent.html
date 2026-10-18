@@ -687,7 +687,7 @@
             </div>
             <div style="padding:16px 24px; border-bottom:1px solid #e8ecf1; display:flex; gap:8px;">
                 <button onclick="switchToolTab('system')" id="toolTabSystem" style="padding:6px 16px; border-radius:20px; border:none; cursor:pointer; font-size:13px; background:#40E0D0; color:white;">系统工具</button>
-                <button onclick="switchToolTab('my')" id="toolTabMy" style="padding:6px 16px; border-radius:20px; border:1px solid #e8ecf1; cursor:pointer; font-size:13px; background:white; color:#4b5563;">我的工具</button>
+                <button onclick="switchToolTab('my')" id="toolTabMy" style="padding:6px 16px; border-radius:20px; border:1px solid #e8ecf1; cursor:pointer; font-size:13px; background:white; color:#4b5563;">工具市场</button>
             </div>
             <div style="padding:12px 24px; border-bottom:1px solid #e8ecf1;">
                 <input type="text" id="toolSearch" style="width:100%; padding:9px 14px; border:1px solid #e8ecf1; border-radius:8px; font-size:14px; outline:none;" placeholder="搜索工具" oninput="filterToolList()">
@@ -1133,11 +1133,11 @@
 
         // 删除Agent
         async function deleteAgent(agentId) {
-            if (!confirm('确定要删除这个Agent吗？')) return;
+            if (!confirm('确认删除该 Agent？\n\n删除后该 Agent 将不再可用，其关联的全部对话历史（含思考轨迹）将被一并删除，此操作不可恢复。')) return;
 
             try {
-                await apiRequest(`/api/agent/agents/${agentId}`, { method: 'DELETE' });
-                showToast('Agent已删除', 'success');
+                const data = await apiRequest(`/api/agent/agents/${agentId}`, { method: 'DELETE' });
+                showToast(`Agent已删除${data && data.deleted_sessions ? `，已同时清除 ${data.deleted_sessions} 个会话的历史` : ''}`, 'success');
                 loadAgents();
             } catch (error) {
                 showToast(error.message, 'error');
@@ -1159,7 +1159,7 @@
             document.getElementById('toolTabSystem').style.color = 'white';
             document.getElementById('toolTabMy').style.background = 'white';
             document.getElementById('toolTabMy').style.color = '#4b5563';
-            
+
             try {
                 // 统一加载所有工具
                 const [systemData, myData] = await Promise.all([
@@ -1168,6 +1168,21 @@
                 ]);
                 allSystemTools = systemData.tools || [];
                 allMyTools = myData.tools || [];
+
+                // 系统工具始终内置：确保所有系统工具都在 tempSelectedTools 中
+                const existingSystemIds = new Set(tempSelectedTools.filter(t => t.tool_type === 'system').map(t => t.id));
+                for (const tool of allSystemTools) {
+                    if (!existingSystemIds.has(tool.id)) {
+                        tempSelectedTools.push({
+                            id: tool.id,
+                            name: tool.name,
+                            desc: tool.desc || '',
+                            tool_type: 'system',
+                            code_path: tool.code_path || ''
+                        });
+                    }
+                }
+
                 renderToolList();
             } catch (error) {
                 showToast('加载工具失败', 'error');
@@ -1204,19 +1219,22 @@
             }
 
             listEl.innerHTML = filtered.map(tool => {
-                const isSelected = tempSelectedTools.some(t => t.id === tool.id);
+                // 系统工具：始终视为已选中，不可取消，仅可配置
+                const isSystemTab = currentToolTab === 'system';
+                const isSelected = isSystemTab ? true : tempSelectedTools.some(t => t.id === tool.id);
                 return `
-                    <div onclick="toggleTool('${tool.id}', '${tool.name}', '${tool.desc || ''}', '${tool.tool_type}', '${tool.code_path || ''}')" 
-                         style="display:flex; align-items:center; gap:12px; padding:12px; border-radius:8px; cursor:pointer; transition:all 0.2s; background:${isSelected ? 'rgba(64,224,208,0.1)' : 'transparent'};"
-                         onmouseover="this.style.background='${isSelected ? 'rgba(64,224,208,0.15)' : '#f8f9fa'}'" 
-                         onmouseout="this.style.background='${isSelected ? 'rgba(64,224,208,0.1)' : 'transparent'}'">
-                        <div style="width:8px; height:8px; border-radius:50%; background:${isSelected ? '#40E0D0' : '#e8ecf1'};"></div>
+                    <div style="display:flex; align-items:center; gap:12px; padding:12px; border-radius:8px; cursor:${isSystemTab ? 'default' : 'pointer'}; transition:all 0.2s; background:${isSelected ? 'rgba(64,224,208,0.08)' : 'transparent'};"
+                         onmouseover="this.style.background='${isSelected ? 'rgba(64,224,208,0.12)' : '#f8f9fa'}'"
+                         onmouseout="this.style.background='${isSelected ? 'rgba(64,224,208,0.08)' : 'transparent'}'"
+                         ${!isSystemTab ? `onclick="toggleTool('${tool.id}', '${tool.name}', '${tool.desc || ''}', '${tool.tool_type}', '${tool.code_path || ''}')"` : ''}>
+                        <div style="width:8px; height:8px; border-radius:50%; background:${isSystemTab ? '#64748b' : (isSelected ? '#40E0D0' : '#e8ecf1')}; flex-shrink:0;"></div>
+                        ${isSystemTab ? '<span style="font-size:10px; color:#64748b; background:#f1f5f9; padding:1px 6px; border-radius:4px; white-space:nowrap; font-weight:500;">内置</span>' : ''}
                         <div style="flex:1;">
                             <div style="font-size:14px; font-weight:500; color:#1a1a2e; margin-bottom:2px;">${escapeHtml(tool.name)}</div>
                             <div style="font-size:12px; color:#8892a0;">${escapeHtml(tool.desc || '暂无描述')}</div>
                         </div>
-                        ${isSelected ? '<span style="color:#40E0D0; margin-right:4px; flex-shrink:0;">✓</span>' : '<span style="width:0; flex-shrink:0;"></span>'}
-                        <button onclick="event.stopPropagation(); openToolConfig('${tool.id}');" 
+                        ${isSystemTab ? '<span style="color:#64748b; margin-right:4px; flex-shrink:0; font-size:12px;">✓ 内置</span>' : (isSelected ? '<span style="color:#40E0D0; margin-right:4px; flex-shrink:0;">✓</span>' : '<span style="width:0; flex-shrink:0;"></span>')}
+                        <button onclick="event.stopPropagation(); openToolConfig('${tool.id}');"
                                 title="配置工具参数"
                                 style="width:30px; height:30px; border-radius:6px; border:1px solid #e2e8f0; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:13px; font-weight:600; flex-shrink:0; opacity:0.7;"
                                 onmouseover="this.style.background='#f8fafc'; this.style.color='#64748b'; this.style.borderColor='#cbd5e1'; this.style.opacity='1';"
@@ -1229,6 +1247,11 @@
         }
 
         function toggleTool(id, name, desc, type, codePath) {
+            // 系统工具不允许取消（内置）
+            if (type === 'system') {
+                showToast('系统工具为内置工具，不可取消', 'info');
+                return;
+            }
             const index = tempSelectedTools.findIndex(t => String(t.id) === String(id));
             if (index >= 0) {
                 tempSelectedTools.splice(index, 1);
@@ -1280,6 +1303,7 @@
                             <option value="hybrid" ${cfg.strategy === 'hybrid' ? 'selected' : ''}>混合检索</option>
                             <option value="vector" ${cfg.strategy === 'vector' ? 'selected' : ''}>向量检索</option>
                             <option value="bm25" ${cfg.strategy === 'bm25' ? 'selected' : ''}>关键字检索</option>
+                            <option value="hyde" ${cfg.strategy === 'hyde' ? 'selected' : ''}>HyDE 假设文档</option>
                         </select>
                     </div>
                     <div style="margin-bottom:16px;">

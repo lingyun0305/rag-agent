@@ -1,13 +1,15 @@
 """
 修复 kb_member 表的 kb_id 字段允许 NULL
 """
-import asyncio
-import sys
-import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+import asyncio
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from sqlalchemy import text
+
 from backend.db.db_config import async_engine
 
 

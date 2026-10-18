@@ -1,23 +1,20 @@
 # backend/app/router/auth.py
 # 登录、注册、用户信息接口
 from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.app.services.auth import login_service, register_service
-from backend.app.schemas.auth import LoginReq, RegisterReq
 from backend.app.core.security import get_current_user
-from backend.db.db_config import get_session
 from backend.app.models.user import User
+from backend.app.schemas.auth import LoginReq, RegisterReq
+from backend.app.services.auth import login_service, register_service
+from backend.db.db_config import get_session
 
 router = APIRouter()
 
 
 @router.post("/login", summary="用户登录")
-async def login(
-    body: LoginReq,
-    db: AsyncSession = Depends(get_session)
-):
+async def login(body: LoginReq, db: AsyncSession = Depends(get_session)):
     """
     用户登录，返回 JWT token
     """
@@ -25,10 +22,7 @@ async def login(
 
 
 @router.post("/register", summary="用户注册")
-async def register(
-    body: RegisterReq,
-    db: AsyncSession = Depends(get_session)
-):
+async def register(body: RegisterReq, db: AsyncSession = Depends(get_session)):
     """
     用户注册
     """
@@ -43,12 +37,11 @@ async def get_current_user_info(
     """
     获取当前登录用户的完整信息
     """
-    result = await db.execute(
-        select(User).where(User.id == current_user)
-    )
+    result = await db.execute(select(User).where(User.id == current_user))
     user = result.scalar_one_or_none()
     if not user:
         from backend.app.common.exceptions import BusinessException
+
         raise BusinessException(code=404, msg="用户不存在")
 
     return {
@@ -79,15 +72,14 @@ async def update_current_user_info(
     """
     更新当前登录用户的基本信息（昵称、邮箱、手机等）
     """
-    result = await db.execute(
-        select(User).where(User.id == current_user)
-    )
+    result = await db.execute(select(User).where(User.id == current_user))
     user = result.scalar_one_or_none()
     if not user:
         from backend.app.common.exceptions import BusinessException
+
         raise BusinessException(code=404, msg="用户不存在")
 
-    updatable_fields = ['nickname', 'email', 'phone', 'department', 'company']
+    updatable_fields = ["nickname", "email", "phone", "department", "company", "avatar"]
     for field in updatable_fields:
         if field in body:
             setattr(user, field, body[field])
@@ -103,5 +95,5 @@ async def update_current_user_info(
         "phone": user.phone or "",
         "department": user.department or "",
         "company": user.company or "",
-        "message": "更新成功"
+        "message": "更新成功",
     }

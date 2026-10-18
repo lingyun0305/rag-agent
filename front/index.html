@@ -979,6 +979,85 @@
             color: #9ca3af;
         }
 
+        /* 附件上传按钮 + 附件列表 */
+        .attach-btn {
+            width: 46px;
+            height: 46px;
+            border: 1px solid #e0e6ed;
+            border-radius: 14px;
+            background: #f8fafc;
+            color: #5b6b7b;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+        .attach-btn:hover {
+            border-color: #40E0D0;
+            color: #20B2AA;
+            background: #ffffff;
+        }
+
+        .attachment-list {
+            max-width: 800px;
+            margin: 0 auto 8px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .attachment-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            max-width: 260px;
+            padding: 6px 10px;
+            background: #eef6f5;
+            border: 1px solid #cfeae7;
+            border-radius: 10px;
+            font-size: 12px;
+            color: #2d3748;
+        }
+        .attachment-chip .chip-name {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .attachment-chip .chip-remove {
+            cursor: pointer;
+            color: #94a3b8;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .attachment-chip .chip-remove:hover {
+            color: #ef4444;
+        }
+        .attachment-chip .chip-size {
+            color: #94a3b8;
+            flex-shrink: 0;
+        }
+
+        /* 拖拽上传：把文件拖进聊天区/输入框，整块区域高亮并提示松手即上传 */
+        .chat-area.dragging::after {
+            content: "松开鼠标即可上传为本轮附件";
+            position: absolute;
+            inset: 8px;
+            z-index: 30;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed #40E0D0;
+            border-radius: 16px;
+            background: rgba(64, 224, 208, 0.10);
+            color: #14a79c;
+            font-size: 15px;
+            font-weight: 600;
+            pointer-events: none;   /* 不拦截 drop 事件 */
+        }
+
+
         .send-btn {
             width: 46px;
             height: 46px;
@@ -1174,7 +1253,11 @@
             <div class="chat-messages" id="messages"></div>
 
             <div class="input-area">
+                <div class="attachment-list" id="attachmentList"></div>
                 <div class="input-wrapper">
+                    <button class="attach-btn" id="attachBtn" type="button" title="上传文件（点击选择，或直接把文件拖到输入框；仅本轮对话有效，刷新/切换会话后失效）">📎</button>
+                    <input type="file" id="fileInput" multiple style="display:none"
+                           accept=".txt,.md,.markdown,.json,.csv,.log,.docx,.xlsx" />
                     <textarea class="input-field" id="input" placeholder="输入消息，按 Enter 发送..." rows="1"></textarea>
                     <button class="send-btn" id="sendBtn">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -1200,11 +1283,21 @@
         const messagesContainer = document.getElementById("messages");
         const agentPanel = document.getElementById("agentPanel");
         const toggleBtn = document.getElementById("toggleBtn");
+        const attachBtn = document.getElementById("attachBtn");
+        const fileInput = document.getElementById("fileInput");
+        const attachmentList = document.getElementById("attachmentList");
 
         // 从后端动态加载的Agent列表
         let agents = [];
         let currentAgentId = null;
         let agentCollapsed = false;
+
+        // 单轮附件：每轮对话一个 turn_id，附件上传与发送共用同一 turn_id（会话级 collection 按 turn_id 单轮隔离）
+        function genTurnId() {
+            return 't_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+        }
+        let currentTurnId = genTurnId();
+        let uploadedFiles = [];   // [{file_id, file_name, size}]，仅本轮有效
 
         // 流式生成状态（并发锁 + 中止控制 + 切页缓存）
         let isStreaming = false;                            // 是否正在生成（并发锁）
@@ -1361,6 +1454,13 @@
                 try { currentReader.cancel(); } catch (e) { /* ignore */ }
             }
         });
+
+        // ====== 单轮附件上传 ======
+        attachBtn.addEventListener('click', function () {
+            if (isStreaming) return;
+            fileInput.click();
+        });
+        fileInput.addEventListener('change', handleFileUpload);
 
         input.addEventListener("keydown", function (e) {
             if (e.key === "Enter" && !e.shiftKey) {
@@ -1633,6 +1733,8 @@
             try {
                 const requestStartTime = Date.now();
                 const sessionId = currentAgentId ? `agent-${currentAgentId}` : "agent-default";
+                // 本轮附件绑定的 turn_id：上传时用过，发送时一并带上（无附件则为 null，后端忽略）
+                const turnId = currentTurnId;
                 const res = await Auth.fetch("/smart/chat", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -1642,7 +1744,8 @@
                         session_id: sessionId,
                         stream: true,
                         llm_provider: model,
-                        agent_id: currentAgentId
+                        agent_id: currentAgentId,
+                        turn_id: turnId
                     })
                 });
 
@@ -1824,7 +1927,168 @@
                 if (currentSessionId) {
                     setSessionCache(currentSessionId, messagesContainer.innerHTML);
                 }
+                // 本轮附件已随本条消息发送完毕：重置 turn_id 并清空附件列表，
+                // 后续上传/发送自动落到新的单轮（避免污染下一轮上下文）。
+                currentTurnId = genTurnId();
+                uploadedFiles = [];
+                renderAttachmentList();
             }
+        }
+
+        // ====== 单轮附件：上传 / 渲染 / 删除 ======
+        // 与后端 SUPPORTED_EXTENSIONS 保持一致（后端会用同一条解析链路，
+        // xlsx/csv 走表格自然语言化，docx 走文档解析器）
+        // 不含 .pdf / .doc / .xls：解析清洗质量不可靠，后端会直接拒绝
+        const SUPPORTED_ATTACH_EXT = [
+            ".txt", ".md", ".markdown", ".json", ".csv", ".log", ".docx", ".xlsx"
+        ];
+        const MAX_FILES_PER_TURN = 5;
+
+        // 统一的附件上传入口：点「📎 选择文件」和「拖拽进聊天区」走同一条路径
+        async function uploadFiles(fileList) {
+            const files = Array.from(fileList || []);
+            if (!files.length) return;
+            if (isStreaming) {
+                alert("正在生成回答，请等本轮结束后再上传附件");
+                return;
+            }
+            const sessionId = currentAgentId ? `agent-${currentAgentId}` : "agent-default";
+            for (const file of files) {
+                if (uploadedFiles.length >= MAX_FILES_PER_TURN) {
+                    alert(`单轮最多上传 ${MAX_FILES_PER_TURN} 个附件，请先移除部分文件`);
+                    break;
+                }
+                const lowerName = (file.name || "").toLowerCase();
+                if (!SUPPORTED_ATTACH_EXT.some(ext => lowerName.endsWith(ext))) {
+                    alert(`不支持的文件类型：${file.name}\n支持：${SUPPORTED_ATTACH_EXT.join("、")}`);
+                    continue;
+                }
+                const formData = new FormData();
+                formData.append("file", file);
+                formData.append("session_id", sessionId);
+                formData.append("turn_id", currentTurnId);
+                try {
+                    const res = await Auth.fetch("/chat/attachment/upload", {
+                        method: "POST",
+                        body: formData,  // 不手动设 Content-Type，让浏览器自动带 boundary
+                    });
+                    const data = await res.json();
+                    if (data && data.data && data.data.file_id) {
+                        uploadedFiles.push({
+                            file_id: data.data.file_id,
+                            file_name: data.data.file_name,
+                            size: file.size,
+                        });
+                    } else {
+                        alert("上传失败：" + (data && data.msg ? data.msg : "未知错误"));
+                    }
+                } catch (err) {
+                    console.error("附件上传失败:", err);
+                    alert("附件上传失败：" + (err && err.message ? err.message : err));
+                }
+            }
+            renderAttachmentList();
+        }
+
+        async function handleFileUpload(e) {
+            await uploadFiles(e.target.files);
+            // 清空 input，允许重复选择同一文件
+            e.target.value = "";
+        }
+
+        // ====== 拖拽上传：把文件拖到输入框（或聊天区任意位置）即可上传 ======
+        const chatArea = document.querySelector(".chat-area");
+        let dragDepth = 0;   // dragenter/dragleave 会因掠过子元素成对触发，用计数避免高亮闪烁
+
+        function draggingFiles(e) {
+            const dt = e.dataTransfer;
+            if (!dt) return false;
+            const types = Array.from(dt.types || []);
+            return types.includes("Files");
+        }
+
+        chatArea.addEventListener("dragenter", function (e) {
+            if (!draggingFiles(e)) return;
+            e.preventDefault();
+            dragDepth += 1;
+            chatArea.classList.add("dragging");
+        });
+
+        chatArea.addEventListener("dragover", function (e) {
+            if (!draggingFiles(e)) return;
+            e.preventDefault();               // 必须阻止默认行为，否则不会触发 drop
+            e.dataTransfer.dropEffect = "copy";
+        });
+
+        chatArea.addEventListener("dragleave", function () {
+            dragDepth = Math.max(0, dragDepth - 1);
+            if (dragDepth === 0) chatArea.classList.remove("dragging");
+        });
+
+        chatArea.addEventListener("drop", async function (e) {
+            if (!draggingFiles(e)) return;
+            e.preventDefault();               // 阻止浏览器默认的"打开文件"行为
+            dragDepth = 0;
+            chatArea.classList.remove("dragging");
+            await uploadFiles(e.dataTransfer.files);
+        });
+
+        // 拖到聊天区以外时同样不打开文件（避免整页跳转到文件内容）
+        ["dragover", "drop"].forEach(function (evt) {
+            window.addEventListener(evt, function (e) {
+                if (draggingFiles(e)) e.preventDefault();
+            });
+        });
+
+        function formatFileSize(bytes) {
+            if (!bytes) return "";
+            if (bytes < 1024) return bytes + "B";
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + "KB";
+            return (bytes / 1024 / 1024).toFixed(1) + "MB";
+        }
+
+        function renderAttachmentList() {
+            attachmentList.innerHTML = "";
+            for (const f of uploadedFiles) {
+                const chip = document.createElement("div");
+                chip.className = "attachment-chip";
+                const name = document.createElement("span");
+                name.className = "chip-name";
+                name.textContent = f.file_name;
+                name.title = f.file_name;
+                const size = document.createElement("span");
+                size.className = "chip-size";
+                size.textContent = formatFileSize(f.size);
+                const rm = document.createElement("span");
+                rm.className = "chip-remove";
+                rm.textContent = "×";
+                rm.title = "移除该附件";
+                rm.addEventListener("click", function () {
+                    removeAttachment(f.file_id);
+                });
+                chip.appendChild(name);
+                chip.appendChild(size);
+                chip.appendChild(rm);
+                attachmentList.appendChild(chip);
+            }
+        }
+
+        async function removeAttachment(fileId) {
+            const sessionId = currentAgentId ? `agent-${currentAgentId}` : "agent-default";
+            try {
+                const formData = new FormData();
+                formData.append("session_id", sessionId);
+                formData.append("turn_id", currentTurnId);
+                formData.append("file_id", fileId);
+                await Auth.fetch("/chat/attachment/delete", {
+                    method: "POST",
+                    body: formData,
+                });
+            } catch (err) {
+                console.error("删除附件失败:", err);
+            }
+            uploadedFiles = uploadedFiles.filter(f => f.file_id !== fileId);
+            renderAttachmentList();
         }
 
         function createThinkingProcessContainer() {
@@ -2440,6 +2704,23 @@
                 const myData = await myRes.json();
                 allSystemTools = systemData.tools || [];
                 allMyTools = myData.tools || [];
+
+                // 系统工具始终内置：确保所有系统工具都在当前已选列表中
+                const currentTools = getCurrentSelectedTools();
+                const existingSystemIds = new Set(currentTools.filter(t => t.tool_type === 'system').map(t => t.id));
+                for (const tool of allSystemTools) {
+                    if (!existingSystemIds.has(tool.id)) {
+                        currentTools.push({
+                            id: tool.id,
+                            name: tool.name,
+                            desc: tool.desc || '',
+                            tool_type: 'system',
+                            code_path: tool.code_path || ''
+                        });
+                    }
+                }
+                setCurrentSelectedTools(currentTools);
+
                 renderToolList();
             } catch (error) {
                 showToast('加载工具失败', 'error');
@@ -2477,19 +2758,22 @@
             }
 
             listEl.innerHTML = filtered.map(tool => {
-                const isSelected = currentTools.some(t => String(t.id) === String(tool.id));
+                // 系统工具：始终视为已选中，不可取消，仅可配置
+                const isSystemTab = currentToolTab === 'system';
+                const isSelected = isSystemTab ? true : currentTools.some(t => String(t.id) === String(tool.id));
                 return `
-                    <div onclick="toggleTool('${tool.id}', '${escapeHtml(tool.name)}', '${escapeHtml(tool.desc || '')}', '${tool.tool_type}', '${tool.code_path || ''}')" 
-                         style="display:flex; align-items:center; gap:12px; padding:12px; border-radius:8px; cursor:pointer; transition:all 0.2s; background:${isSelected ? 'rgba(64,224,208,0.1)' : 'transparent'};"
-                         onmouseover="this.style.background='${isSelected ? 'rgba(64,224,208,0.15)' : '#f8f9fa'}'" 
-                         onmouseout="this.style.background='${isSelected ? 'rgba(64,224,208,0.1)' : 'transparent'}">
-                        <div style="width:8px; height:8px; border-radius:50%; background:${isSelected ? '#40E0D0' : '#e8ecf1'};"></div>
+                    <div style="display:flex; align-items:center; gap:12px; padding:12px; border-radius:8px; cursor:${isSystemTab ? 'default' : 'pointer'}; transition:all 0.2s; background:${isSelected ? 'rgba(64,224,208,0.08)' : 'transparent'};"
+                         onmouseover="this.style.background='${isSelected ? 'rgba(64,224,208,0.12)' : '#f8f9fa'}'"
+                         onmouseout="this.style.background='${isSelected ? 'rgba(64,224,208,0.08)' : 'transparent'}'"
+                         ${!isSystemTab ? `onclick="toggleTool('${tool.id}', '${escapeHtml(tool.name)}', '${escapeHtml(tool.desc || '')}', '${tool.tool_type}', '${tool.code_path || ''}')"` : ''}>
+                        <div style="width:8px; height:8px; border-radius:50%; background:${isSystemTab ? '#64748b' : (isSelected ? '#40E0D0' : '#e8ecf1')}; flex-shrink:0;"></div>
+                        ${isSystemTab ? '<span style="font-size:10px; color:#64748b; background:#f1f5f9; padding:1px 6px; border-radius:4px; white-space:nowrap; font-weight:500;">内置</span>' : ''}
                         <div style="flex:1; min-width:0;">
                             <div style="font-size:14px; font-weight:500; color:#1a1a2e; margin-bottom:2px;">${escapeHtml(tool.name)}</div>
                             <div style="font-size:12px; color:#8892a0;">${escapeHtml(tool.desc || '暂无描述')}</div>
                         </div>
-                        ${isSelected ? '<span style="color:#40E0D0; margin-right:4px; flex-shrink:0;">✓</span>' : '<span style="width:0; flex-shrink:0;"></span>'}
-                        <button onclick="event.stopPropagation(); openToolConfig('${tool.id}');" 
+                        ${isSystemTab ? '<span style="color:#64748b; margin-right:4px; flex-shrink:0; font-size:12px;">✓ 内置</span>' : (isSelected ? '<span style="color:#40E0D0; margin-right:4px; flex-shrink:0;">✓</span>' : '<span style="width:0; flex-shrink:0;"></span>')}
+                        <button onclick="event.stopPropagation(); openToolConfig('${tool.id}');"
                                 title="配置工具参数"
                                 style="width:30px; height:30px; border-radius:6px; border:1px solid #e2e8f0; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:13px; font-weight:600; flex-shrink:0; opacity:0.7;"
                                 onmouseover="this.style.background='#f8fafc'; this.style.color='#64748b'; this.style.borderColor='#cbd5e1'; this.style.opacity='1';"
@@ -2502,6 +2786,11 @@
         }
 
         function toggleTool(id, name, desc, type, codePath) {
+            // 系统工具不允许取消（内置）
+            if (type === 'system') {
+                showToast('系统工具为内置工具，不可取消', 'info');
+                return;
+            }
             const currentTools = getCurrentSelectedTools();
             const index = currentTools.findIndex(t => String(t.id) === String(id));
             if (index >= 0) {
@@ -2552,9 +2841,10 @@
                     <div style="margin-bottom:20px;">
                         <label style="display:block; font-size:14px; font-weight:500; color:#1a1a2e; margin-bottom:8px;">检索策略</label>
                         <select id="tcStrategy" style="width:100%; padding:10px 14px; border:1px solid #e8ecf1; border-radius:8px; font-size:14px; outline:none; background:white;">
-                            <option value="vector" ${strategy === 'vector' ? 'selected' : ''}>向量检索</option>
-                            <option value="bm25" ${strategy === 'bm25' ? 'selected' : ''}>关键字检索</option>
-                            <option value="hybrid" ${strategy === 'hybrid' ? 'selected' : ''}>混合检索</option>
+                        <option value="vector" ${strategy === 'vector' ? 'selected' : ''}>向量检索</option>
+                        <option value="bm25" ${strategy === 'bm25' ? 'selected' : ''}>关键字检索</option>
+                        <option value="hybrid" ${strategy === 'hybrid' ? 'selected' : ''}>混合检索</option>
+                        <option value="hyde" ${strategy === 'hyde' ? 'selected' : ''}>HyDE 假设文档</option>
                         </select>
                     </div>
                     <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px;">
@@ -2882,6 +3172,58 @@
             editTempSelectedKBs = [];
         }
 
+        // ====== 删除 Agent（含关联对话历史） ======
+        function confirmDeleteAgent() {
+            if (!editingAgentId) return;
+            const agent = agents.find(a => a.id === editingAgentId);
+            document.getElementById('deleteAgentConfirmName').textContent =
+                agent ? `「${agent.name}」` : '';
+            document.getElementById('deleteAgentConfirmModal').style.display = 'flex';
+        }
+
+        function hideDeleteAgentConfirm() {
+            document.getElementById('deleteAgentConfirmModal').style.display = 'none';
+        }
+
+        async function doDeleteAgent() {
+            if (!editingAgentId) return;
+            const agentId = editingAgentId;
+            const btn = document.getElementById('deleteAgentConfirmBtn');
+            btn.disabled = true;
+            btn.textContent = '删除中…';
+            try {
+                const res = await fetch(`/api/agent/agents/${agentId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
+                });
+                if (!res.ok) {
+                    const error = await res.json().catch(() => ({}));
+                    throw new Error(error.message || '删除失败');
+                }
+                const data = await res.json().catch(() => ({}));
+
+                // 清理本地痕迹：会话消息缓存 + 当前选中 Agent
+                try {
+                    localStorage.removeItem('rag_chat_cache::agent-' + agentId);
+                    if (currentAgentId === agentId) {
+                        localStorage.removeItem('rag_current_agent');
+                        currentAgentId = null;
+                        currentSessionId = null;
+                    }
+                } catch (e) { /* 忽略 */ }
+
+                hideDeleteAgentConfirm();
+                hideEditAgentModal();
+                await loadAgents();
+                showToast(`删除成功${data.deleted_sessions ? `，已同时清除 ${data.deleted_sessions} 个会话的历史` : ''}`);
+            } catch (error) {
+                showToast(error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '确认删除';
+            }
+        }
+
         function updateEditAgentToolsDisplay() {
             const placeholder = document.getElementById('editAgentToolsPlaceholder');
             const container = document.getElementById('editAgentToolsSelected');
@@ -3193,11 +3535,41 @@
                 </div>
             </div>
             <div
-                style="padding:16px 24px; border-top:1px solid #f0f0f0; display:flex; gap:12px; justify-content:flex-end;">
+                style="padding:16px 24px; border-top:1px solid #f0f0f0; display:flex; gap:12px; justify-content:flex-end; align-items:center;">
+                <button id="deleteAgentBtn" onclick="confirmDeleteAgent()"
+                    style="margin-right:auto; padding:10px 20px; border:1px solid #fecaca; border-radius:10px; background:#fef2f2; cursor:pointer; font-size:14px; color:#dc2626; font-weight:500; transition:all 0.2s;"
+                    onmouseover="this.style.background='#fee2e2'; this.style.borderColor='#fca5a5'"
+                    onmouseout="this.style.background='#fef2f2'; this.style.borderColor='#fecaca'">删除 Agent</button>
                 <button onclick="hideEditAgentModal()"
                     style="padding:10px 20px; border:1px solid #e8ecf1; border-radius:10px; background:white; cursor:pointer; font-size:14px; color:#666;">取消</button>
                 <button onclick="submitEditAgent()"
                     style="padding:10px 24px; border:none; border-radius:10px; background:linear-gradient(135deg, #40E0D0 0%, #20B2AA 100%); color:white; cursor:pointer; font-size:14px; font-weight:500;">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 删除Agent二次确认弹窗 ====== -->
+    <div id="deleteAgentConfirmModal"
+        style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:3200; justify-content:center; align-items:center;">
+        <div
+            style="background:white; border-radius:16px; width:400px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+            <div style="padding:28px 28px 8px; text-align:center;">
+                <div
+                    style="width:56px; height:56px; margin:0 auto 16px; border-radius:50%; background:#fef2f2; display:flex; align-items:center; justify-content:center; font-size:28px;">
+                    ⚠️
+                </div>
+                <h3 style="font-size:17px; font-weight:600; color:#1a1a2e; margin:0 0 8px;">确认删除该 Agent？</h3>
+                <p id="deleteAgentConfirmName" style="font-size:13px; color:#666; margin:0 0 8px; word-break:break-all;"></p>
+                <p style="font-size:13px; color:#9ca3af; line-height:1.6; margin:0;">
+                    删除后该 Agent 将不再可用，其关联的<b style="color:#dc2626;">全部对话历史</b>（含思考轨迹）将被一并删除，<b style="color:#dc2626;">此操作不可恢复</b>。
+                </p>
+            </div>
+            <div
+                style="padding:20px 24px; display:flex; gap:12px; justify-content:flex-end;">
+                <button onclick="hideDeleteAgentConfirm()"
+                    style="flex:1; padding:10px 20px; border:1px solid #e8ecf1; border-radius:10px; background:white; cursor:pointer; font-size:14px; color:#666;">取消</button>
+                <button id="deleteAgentConfirmBtn" onclick="doDeleteAgent()"
+                    style="flex:1; padding:10px 20px; border:none; border-radius:10px; background:linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color:white; cursor:pointer; font-size:14px; font-weight:500;">确认删除</button>
             </div>
         </div>
     </div>
@@ -3223,9 +3595,9 @@
                     onfocus="this.style.borderColor='#40E0D0'" onblur="this.style.borderColor='#e8ecf1'">
                 <div style="display:flex; gap:4px;">
                     <button id="toolTabSystem" onclick="switchToolTab('system')"
-                        style="padding:6px 14px; border:1px solid #e8ecf1; border-radius:8px; background:#40E0D0; color:white; cursor:pointer; font-size:13px;">系统</button>
+                        style="padding:6px 14px; border:1px solid #e8ecf1; border-radius:8px; background:#40E0D0; color:white; cursor:pointer; font-size:13px;">系统工具</button>
                     <button id="toolTabMy" onclick="switchToolTab('custom')"
-                        style="padding:6px 14px; border:1px solid #e8ecf1; border-radius:8px; background:white; color:#4b5563; cursor:pointer; font-size:13px;">我的</button>
+                        style="padding:6px 14px; border:1px solid #e8ecf1; border-radius:8px; background:white; color:#4b5563; cursor:pointer; font-size:13px;">工具市场</button>
                 </div>
             </div>
             <div id="toolList" style="flex:1; overflow-y:auto; padding:8px;"></div>

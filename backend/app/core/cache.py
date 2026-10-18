@@ -10,16 +10,17 @@
 - 对话历史缓存（已存在，复用）
 """
 
-from typing import Any, Callable, Optional, List
-import json
 import asyncio
-from datetime import timedelta
 import hashlib
+import json
+from collections.abc import Callable
+from datetime import timedelta
+from typing import Any
 
 import redis.asyncio as redis
 
-from backend.app.core.config import settings
 from backend.app.common.logger import logger
+from backend.app.core.config import settings
 
 
 class CacheService:
@@ -57,8 +58,8 @@ class CacheService:
             self._redis = redis.from_url(
                 settings.REDIS_URL,
                 socket_connect_timeout=1,  # 连接超时1秒
-                socket_timeout=1,           # 读写超时1秒
-                decode_responses=False
+                socket_timeout=1,  # 读写超时1秒
+                decode_responses=False,
             )
             await asyncio.wait_for(self._redis.ping(), timeout=2)
             self._initialized = True
@@ -91,8 +92,8 @@ class CacheService:
         self,
         key: str,
         value: Any,
-        expire: Optional[int] = None,
-        expire_time: Optional[timedelta] = None,
+        expire: int | None = None,
+        expire_time: timedelta | None = None,
     ) -> None:
         """设置缓存"""
         await self._init()
@@ -111,6 +112,7 @@ class CacheService:
                 self._fallback_cache[key] = value
                 if expire:
                     import asyncio
+
                     asyncio.create_task(self._clear_fallback_after(key, expire))
 
         except Exception as e:
@@ -254,7 +256,7 @@ class CacheService:
             logger.warning(f"Redis rpush 失败: {e}")
             return 0
 
-    async def lrange(self, key: str, start: int, end: int) -> List[Any]:
+    async def lrange(self, key: str, start: int, end: int) -> list[Any]:
         """获取列表指定范围元素"""
         await self._init()
         try:
@@ -263,7 +265,7 @@ class CacheService:
                 return [json.loads(v) for v in raw] if raw else []
             else:
                 lst = self._fallback_cache.get(key, [])
-                return lst[start:end+1] if end >= 0 else lst[start:]
+                return lst[start : end + 1] if end >= 0 else lst[start:]
         except Exception as e:
             logger.warning(f"Redis lrange 失败: {e}")
             return []
@@ -276,7 +278,7 @@ class CacheService:
                 await self._redis.ltrim(key, start, end)
             else:
                 lst = self._fallback_cache.get(key, [])
-                self._fallback_cache[key] = lst[start:end+1] if end >= 0 else lst[start:]
+                self._fallback_cache[key] = lst[start : end + 1] if end >= 0 else lst[start:]
         except Exception as e:
             logger.warning(f"Redis ltrim 失败: {e}")
 
@@ -292,15 +294,14 @@ class CacheService:
             logger.warning(f"Redis llen 失败: {e}")
             return 0
 
-    async def keys(self, pattern: str) -> List[str]:
+    async def keys(self, pattern: str) -> list[str]:
         """获取匹配模式的键"""
         await self._init()
         try:
             if self._redis is not None:
                 return await self._redis.keys(pattern)
             else:
-                return [k for k in self._fallback_cache.keys() 
-                        if pattern.replace("*", "") in k]
+                return [k for k in self._fallback_cache.keys() if pattern.replace("*", "") in k]
         except Exception as e:
             logger.warning(f"Redis keys 失败: {e}")
             return []

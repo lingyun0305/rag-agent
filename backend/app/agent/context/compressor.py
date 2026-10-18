@@ -7,13 +7,11 @@
 3. 文档裁剪：对检索到的文档进行裁剪
 """
 
-from typing import List, Dict, Any, Optional
-from datetime import datetime
-from langchain_core.messages import BaseMessage, SystemMessage, HumanMessage, AIMessage
+from typing import Any
 
-from backend.app.utils.models_factory import model_factory
-from backend.app.core.config import settings
 from backend.app.common.logger import logger
+from backend.app.core.config import settings
+from backend.app.utils.models_factory import model_factory
 
 
 class ContextCompressor:
@@ -42,12 +40,9 @@ class ContextCompressor:
         self.token_ratio = token_ratio
         if llm_provider is None:
             llm_provider = settings.DEFAULT_LLM_PROVIDER
-        self.llm = model_factory.get_llm_model(
-            provider=llm_provider,
-            temperature=0.1
-        )
+        self.llm = model_factory.get_llm_model(provider=llm_provider, temperature=0.1)
 
-    def estimate_tokens(self, messages: List[Dict]) -> int:
+    def estimate_tokens(self, messages: list[dict]) -> int:
         """
         估算消息列表的 token 数量
 
@@ -62,11 +57,11 @@ class ContextCompressor:
 
     async def sliding_window(
         self,
-        messages: List[Dict],
+        messages: list[dict],
         keep_rounds: int = 6,
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """
-        方案 A：滑动窗口压缩
+        滑动窗口压缩
 
         保留最近 N 轮对话，丢弃更早的历史
 
@@ -81,26 +76,33 @@ class ContextCompressor:
             return messages
 
         # 保留最近 keep_rounds * 2 条消息
-        return messages[-keep_rounds * 2:]
+        return messages[-keep_rounds * 2 :]
 
     async def summarize_history(
         self,
-        messages: List[Dict],
+        messages: list[dict],
         max_summary_chars: int = 1500,
-    ) -> List[Dict]:
+        keep_recent_rounds: int = 4,
+        force: bool = False,
+    ) -> list[dict]:
         """
-        方案 B：摘要压缩
+        摘要压缩
 
         将中间历史对话压缩为一段摘要，保留关键信息
 
         Args:
             messages: 消息列表
             max_summary_chars: 摘要最大字符数
+            keep_recent_rounds: 摘要时仍保留为原文的最近轮数（每轮 = user+assistant）。
+                默认 4（保留最近 4 轮原文 + 其余摘要）；传 0 表示整段历史都摘要成一段。
+            force: 为 True 时跳过 `len <= 8` 的早退保护（用于明确判定超长需压缩的场景，
+                如会话历史已裁剪到 4 轮但仍超 token 预算）。
 
         Returns:
             压缩后的消息列表（系统消息 + 摘要 + 最近几轮）
         """
-        if len(messages) <= 8:
+        # 早退保护：消息不多且非强制时不摘要（默认 4 轮以内视为无需摘要）
+        if len(messages) <= 8 and not force:
             return messages
 
         # 分离：系统消息、中间历史、最近几轮
@@ -114,10 +116,14 @@ class ContextCompressor:
             else:
                 history_msgs.append(msg)
 
-        # 保留最近 4 轮作为详细上下文
-        if len(history_msgs) > 8:
-            recent_msgs = history_msgs[-8:]
-            history_to_summarize = history_msgs[:-8]
+        # 保留最近 keep_recent_rounds 轮作为详细上下文；其余送摘要。
+        # keep_recent_rounds <= 0 表示整段历史都摘要（不保留近期原文）。
+        if keep_recent_rounds <= 0:
+            recent_msgs = []
+            history_to_summarize = history_msgs
+        elif len(history_msgs) > keep_recent_rounds * 2:
+            recent_msgs = history_msgs[-keep_recent_rounds * 2 :]
+            history_to_summarize = history_msgs[: -keep_recent_rounds * 2]
         else:
             recent_msgs = history_msgs
             history_to_summarize = []
@@ -153,22 +159,24 @@ class ContextCompressor:
         # 构建压缩后的消息
         compressed = []
         compressed.extend(system_msgs)
-        compressed.append({
-            "role": "system",
-            "content": f"【对话历史摘要】\n{summary}\n\n【最新对话】",
-        })
+        compressed.append(
+            {
+                "role": "system",
+                "content": f"【对话历史摘要】\n{summary}\n\n【最新对话】",
+            }
+        )
         compressed.extend(recent_msgs)
 
         return compressed
 
     async def trim_documents(
         self,
-        docs: List[Dict],
+        docs: list[dict],
         max_chars: int = 2000,
         per_doc_limit: int = 500,
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """
-        方案 C：文档裁剪
+        文档裁剪
 
         对检索到的文档进行裁剪，控制总字符数
 
@@ -206,10 +214,10 @@ class ContextCompressor:
 
     async def compress(
         self,
-        messages: List[Dict],
+        messages: list[dict],
         strategy: str = "sliding_window",
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         统一压缩接口
 
@@ -241,7 +249,9 @@ class ContextCompressor:
             compressed = messages
 
         compressed_tokens = self.estimate_tokens(compressed)
-        compression_ratio = (original_tokens - compressed_tokens) / original_tokens if original_tokens > 0 else 0
+        compression_ratio = (
+            (original_tokens - compressed_tokens) / original_tokens if original_tokens > 0 else 0
+        )
 
         return {
             "compressed_messages": compressed,
@@ -255,8 +265,8 @@ class ContextCompressor:
 
     async def compare_strategies(
         self,
-        messages: List[Dict],
-    ) -> Dict[str, Any]:
+        messages: list[dict],
+    ) -> dict[str, Any]:
         """
         对比三种压缩策略的效果
 
@@ -331,9 +341,9 @@ class ContextCompressor:
 
     async def smart_compress(
         self,
-        messages: List[Dict],
+        messages: list[dict],
         context_type: str = "chat_history",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         智能压缩：根据上下文类型和长度自动选择最优策略
 
@@ -381,7 +391,7 @@ class ContextCompressor:
         result["reason"] = reason
         return result
 
-    def _select_strategy(self, messages: List[Dict], original_tokens: int) -> tuple:
+    def _select_strategy(self, messages: list[dict], original_tokens: int) -> tuple:
         """
         根据对话特征选择最优策略
 
@@ -419,7 +429,7 @@ class ContextCompressor:
             # 默认 → 滑动窗口（通用安全）
             return "sliding_window", "默认使用滑动窗口"
 
-    def _detect_topic_coherence(self, messages: List[Dict]) -> bool:
+    def _detect_topic_coherence(self, messages: list[dict]) -> bool:
         """
         简单检测主题连贯性
 
@@ -430,23 +440,20 @@ class ContextCompressor:
             return False
 
         # 提取早期和最近消息的关键词
-        early_content = " ".join(
-            msg.get("content", "") for msg in messages[:4]
-        )
-        recent_content = " ".join(
-            msg.get("content", "") for msg in messages[-4:]
-        )
+        early_content = " ".join(msg.get("content", "") for msg in messages[:4])
+        recent_content = " ".join(msg.get("content", "") for msg in messages[-4:])
 
         # 简单分词
         def get_keywords(text):
             import jieba
+
             # 提取中文词和英文词
             seg_msg = jieba.lcut(text)
-            filter_words=[]
+            filter_words = []
             for w in seg_msg:
-                if len(w)>=2 and "\u4e00" <= w[0] <= "\u9fff":
+                if len(w) >= 2 and "\u4e00" <= w[0] <= "\u9fff":
                     filter_words.append(w)
-                elif len(w)>=3 and w.isalpha():
+                elif len(w) >= 3 and w.isalpha():
                     filter_words.append(w)
             return set(filter_words[:20])
 
@@ -462,6 +469,7 @@ class ContextCompressor:
 
 _context_compressor_instance = None
 
+
 def get_context_compressor(llm_provider: str = None):
     global _context_compressor_instance
     if _context_compressor_instance is None:
@@ -470,8 +478,10 @@ def get_context_compressor(llm_provider: str = None):
         _context_compressor_instance = ContextCompressor(llm_provider=llm_provider)
     return _context_compressor_instance
 
+
 class _ContextCompressorProxy:
     def __getattr__(self, name):
         return getattr(get_context_compressor(), name)
+
 
 context_compressor = _ContextCompressorProxy()

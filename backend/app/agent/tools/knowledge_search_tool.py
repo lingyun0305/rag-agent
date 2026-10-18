@@ -297,10 +297,11 @@ class KnowledgeSearchTool(BaseTool):
             eff_use_rerank = use_rerank if use_rerank is not None else cfg.get("use_rerank", True)
             eff_score_threshold = cfg.get("similarity_threshold", 0.0)
 
-            # ====== Query 改写（智能路由） ======
+            # ====== Query 改写（仅 hybrid 策略下由智能路由决定是否改写；
+            #         显式 vector / bm25 / hyde 为权威选择，路由不再覆盖） ======
             rewrite_method = METHOD_NONE
             eff_query = query
-            if self._enable_query_rewrite:
+            if self._enable_query_rewrite and eff_strategy == "hybrid":
                 try:
                     rewrite_method = await query_rewrite_router.route(query)
                     if rewrite_method == METHOD_HYDE:
@@ -342,6 +343,10 @@ class KnowledgeSearchTool(BaseTool):
                     logger.warning(f"Query改写失败，退化为原query检索: {e}")
                     rewrite_method = METHOD_NONE
                     eff_query = query
+            else:
+                # 显式 vector / bm25 / hyde：用户/前端已明确指定，不再经智能路由改写。
+                # hyde 由 retriever 内部生成假设文档，避免与路由产生双重 hyde。
+                rewrite_method = METHOD_HYDE if eff_strategy == "hyde" else METHOD_NONE
 
             # ====== 常规单查询检索 ======
             filtered_kb_ids = []

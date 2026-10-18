@@ -1,8 +1,9 @@
 # backend/app/utils/rerank_service.py
+
 from langchain_core.documents import Document
-from typing import List,Optional
 
 from backend.app.utils.models_factory import model_factory
+
 
 class RerankService:
     """
@@ -13,7 +14,7 @@ class RerankService:
 
     # ====== 初始化 ======
 
-    def __init__(self,provider:str="bge",top_k:int=6):
+    def __init__(self, provider: str = "bge", top_k: int = 6):
         """
         初始化Rerank服务
         Args:
@@ -28,13 +29,10 @@ class RerankService:
         self.default_top_k = top_k
 
     # ====== 核心重排序方法 ======
-    
+
     def rerank(
-        self,
-        query:str,
-        documents:List[Document],
-        top_k:Optional[int]=None
-    )->List[Document]:
+        self, query: str, documents: list[Document], top_k: int | None = None
+    ) -> list[Document]:
         """
         对候选文档进行重排序
         Args:
@@ -48,26 +46,23 @@ class RerankService:
             return []
         if top_k is None:
             top_k = self.default_top_k
-        
+
         if len(documents) > 100:
             documents = documents[:100]
 
         if self.reranker is None:
             return documents[:top_k]
 
-        reranked_docs = self.reranker.compress_documents(
-            documents=documents,
-            query = query
-        )
+        reranked_docs = self.reranker.compress_documents(documents=documents, query=query)
         return reranked_docs[:top_k]
 
     def rerank_with_score(
         self,
-        query:str,
-        documents:List[Document],
-        top_k:Optional[int]=None,
-        score_threshold:float = 0.7
-    )->List[tuple[Document,float]]:
+        query: str,
+        documents: list[Document],
+        top_k: int | None = None,
+        score_threshold: float = 0.7,
+    ) -> list[tuple[Document, float]]:
         """
         重排序并返回分数
         Args:
@@ -86,24 +81,21 @@ class RerankService:
             documents = documents[:100]
         reranked_docs = self.reranker.compress_documents(
             documents=documents,
-            query = query,
+            query=query,
         )
-        results=[]
+        results = []
         for doc in reranked_docs:
-            score = doc.metadata.get("relevance_score",0.0)
+            score = doc.metadata.get("relevance_score", 0.0)
             if score_threshold is not None and score < score_threshold:
                 continue
-            results.append((doc,score))
+            results.append((doc, score))
         return results
-    
+
     # ====== 批量处理 ======
 
     def rerank_batch(
-        self,
-        queries:List[str],
-        document_list:List[List[Document]],
-        top_k:Optional[int] = None
-    )->List[List[Document]]:
+        self, queries: list[str], document_list: list[list[Document]], top_k: int | None = None
+    ) -> list[list[Document]]:
         """
         批量重排序（多个query分别处理）
         Args:
@@ -114,10 +106,11 @@ class RerankService:
             重排序结果列表，与queries一一对应
         """
         results = []
-        for query,docs in zip(queries,document_list):
-            reranked_docs = self.rerank(query=query,documents=docs,top_k=top_k)
+        for query, docs in zip(queries, document_list):
+            reranked_docs = self.rerank(query=query, documents=docs, top_k=top_k)
             results.append(reranked_docs)
         return results
+
 
 # ====== 全局实例 ======
 

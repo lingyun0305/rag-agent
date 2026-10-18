@@ -1,12 +1,13 @@
 # backend/app/core/security.py
-import bcrypt
-from fastapi.security import OAuth2PasswordBearer
 from datetime import datetime, timedelta
-from fastapi import Depends
-import jwt
 
+import bcrypt
+import jwt
+from fastapi import Depends
+from fastapi.security import OAuth2PasswordBearer
+
+from backend.app.common.exceptions import InvalidCredentialError, TokenError
 from backend.app.core.config import settings
-from backend.app.common.exceptions import TokenError, InvalidCredentialError
 
 # 从配置加载
 SECRET_KEY = settings.SECRET_KEY
@@ -19,7 +20,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 def _truncate_password(password: str) -> bytes:
     """密码截断到 bcrypt 最大支持的 72 字节"""
-    return password.encode('utf-8')[:72]
+    return password.encode("utf-8")[:72]
 
 
 def get_password_hash(password: str) -> str:
@@ -27,13 +28,13 @@ def get_password_hash(password: str) -> str:
     password_bytes = _truncate_password(password)
     salt = bcrypt.gensalt()
     hashed = bcrypt.hashpw(password_bytes, salt)
-    return hashed.decode('utf-8')
+    return hashed.decode("utf-8")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """验证密码（与哈希时保持同样的截断逻辑）"""
     password_bytes = _truncate_password(plain_password)
-    hashed_bytes = hashed_password.encode('utf-8')
+    hashed_bytes = hashed_password.encode("utf-8")
     return bcrypt.checkpw(password_bytes, hashed_bytes)
 
 

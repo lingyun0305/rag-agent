@@ -6,13 +6,15 @@
 3. 给 kb_member 加 folder_id 列，kb_id 改为 nullable
 4. 为已有知识库/文件夹初始化 kb_member 记录(创建者为admin)
 """
-import asyncio
-import sys
-import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+import asyncio
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from sqlalchemy import text
+
 from backend.db.db_config import async_engine
 
 
@@ -34,14 +36,18 @@ async def migrate():
 
         # 3. knowledge_base: 加 collaborator_count
         try:
-            await conn.execute(text("ALTER TABLE knowledge_base ADD COLUMN collaborator_count INT DEFAULT 1"))
+            await conn.execute(
+                text("ALTER TABLE knowledge_base ADD COLUMN collaborator_count INT DEFAULT 1")
+            )
             print("✓ knowledge_base.collaborator_count 列已添加")
         except Exception as e:
             print(f"- 跳过添加 knowledge_base.collaborator_count: {e}")
 
         # 4. kb_folder: 加 collaborator_count
         try:
-            await conn.execute(text("ALTER TABLE kb_folder ADD COLUMN collaborator_count INT DEFAULT 1"))
+            await conn.execute(
+                text("ALTER TABLE kb_folder ADD COLUMN collaborator_count INT DEFAULT 1")
+            )
             print("✓ kb_folder.collaborator_count 列已添加")
         except Exception as e:
             print(f"- 跳过添加 kb_folder.collaborator_count: {e}")
@@ -62,26 +68,30 @@ async def migrate():
 
         # 7. 为已有知识库更新 collaborator_count
         try:
-            await conn.execute(text("""
+            await conn.execute(
+                text("""
                 UPDATE knowledge_base kb
                 SET collaborator_count = (
                     SELECT COUNT(*) FROM kb_member m
                     WHERE m.kb_id = kb.id AND m.status = 'active'
                 )
-            """))
+            """)
+            )
             print("✓ knowledge_base.collaborator_count 已同步")
         except Exception as e:
             print(f"- 跳过同步 knowledge_base.collaborator_count: {e}")
 
         # 8. 为已有文件夹更新 collaborator_count
         try:
-            await conn.execute(text("""
+            await conn.execute(
+                text("""
                 UPDATE kb_folder kf
                 SET collaborator_count = (
                     SELECT COUNT(*) FROM kb_member m
                     WHERE m.folder_id = kf.id AND m.status = 'active'
                 )
-            """))
+            """)
+            )
             print("✓ kb_folder.collaborator_count 已同步")
         except Exception as e:
             print(f"- 跳过同步 kb_folder.collaborator_count: {e}")

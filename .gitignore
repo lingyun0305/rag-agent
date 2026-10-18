@@ -40,7 +40,12 @@ logs/
 chroma_db/
 
 # ====== 用户上传文件 ======
-knowledge_files/
+# 运行期产物整体忽略；但 knowledge_files/eval_fixtures/ 是评测 fixture 目录
+# （file_reader 白名单目录之一，评测 file_001~003 依赖它），必须入库，
+# 否则别人 clone 下来跑评测会因为缺 fixture 而失败。
+knowledge_files/*
+!knowledge_files/eval_fixtures/
+!knowledge_files/eval_fixtures/**
 uploads/
 
 # ====== 模型文件 ======
@@ -78,6 +83,9 @@ desktop.ini
 *.zip
 *.tar.gz
 *.rar
+# 演示视频例外：assets/ 下的演示视频需入库供 README 嵌入
+!assets/
+!assets/*.mp4
 
 # ====== 文档导出文件 ======
 API文档.docx
@@ -89,6 +97,8 @@ API文档.docx
 get-pip.py
 # pytest 缓存
 .pytest_cache/
+# ruff 缓存
+.ruff_cache/
 # Pip 缓存/锁文件
 pip-log.txt
 *.egg-link
@@ -97,6 +107,8 @@ pip-log.txt
 backend/eval/reports/
 # 评测运行日志（*.log 已全局忽略，此处按目录再兜底）
 eval_run_logs/
+# 评测/调试运行目录（含各次 run 的 stdout 日志与临时调试脚本，非源码）
+eval_runs/
 
 # ====== 依赖安装产物（pip install 时产生的文档/share 等，非项目源码）======
 backend/share/

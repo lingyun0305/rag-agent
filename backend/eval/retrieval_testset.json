@@ -1,0 +1,35 @@
+{
+  "_usage": "RAG 检索质量评测集（扩标版，24 条，原 3 条）。步骤: 1) 确认下方 kb_ids 与你的实际知识库集合一致（可在知识库管理页/DB 查）；2) 直接跑 eval 看指标：python backend/eval/run_rag_eval.py --mode eval --dataset backend/eval/retrieval_testset.json --rebuild-bm25；3) 想更精确就先跑 build-gold 把应召回 chunk_id 填回 expected_chunk_ids。本集用 expected_snippets（源文档逐字片段）做兜底标注，无需精确 chunk_id 即可算准确率/召回率。",
+  "name": "检索评测集（扩标 24 条，snippet 标注）",
+  "kb_ids": ["ix47sAGw7aJU", "lOC5sPxeDu59"],
+  "default_strategy": "hybrid",
+  "default_top_k": 10,
+  "cases": [
+    {"query": "张伟在哪个部门？他的基本工资是多少？", "expected_chunk_ids": [], "expected_snippets": ["E001,张伟,男,技术研发部,高级工程师,2019-03-15,18000"], "reference": "张伟在技术研发部，基本工资18000元"},
+    {"query": "公司员工信息表包含哪些字段？", "expected_chunk_ids": [], "expected_snippets": ["员工编号,姓名,性别,部门,职位,入职日期,基本工资(元)"]},
+    {"query": "李娜属于哪个部门，基本工资多少？", "expected_chunk_ids": [], "expected_snippets": ["E002,李娜,女,产品部,产品经理,2020-07-01,16500"]},
+    {"query": "公司的架构师是谁，工资多少？", "expected_chunk_ids": [], "expected_snippets": ["E010,郑浩,男,技术研发部,架构师,2016-04-10,28000"]},
+    {"query": "冯雪在哪个部门担任什么职位？", "expected_chunk_ids": [], "expected_snippets": ["E020,冯雪,女,运营部,内容运营"]},
+    {"query": "销售部有哪些员工？", "expected_chunk_ids": [], "expected_snippets": ["E016,罗勇,男,销售部,销售经理,2018-05-18,18000"]},
+    {"query": "公司女性员工信息记录在表的哪个部分？", "expected_chunk_ids": [], "expected_snippets": ["员工编号,姓名,性别,部门,职位"], "reference": "以当前员工信息表 CSV 为准，女性员工含李娜、陈静、孙丽、吴芳等"},
+
+    {"query": "星辰科技成立于哪一年，主要有几条产品线？", "expected_chunk_ids": [], "expected_snippets": ["星辰科技成立于2020年，专注于企业级SaaS服务"]},
+    {"query": "星辰科技的三条核心产品线分别是什么？", "expected_chunk_ids": [], "expected_snippets": ["智能CRM（客户关系管理系统）", "协同办公工具 WorkSpace"]},
+    {"query": "2025年Q2公司总营收和净利润是多少？", "expected_chunk_ids": [], "expected_snippets": ["2025年第二季度，公司总营收为3,850万元", "Q2净利润为920万元，净利润率23.9%"], "reference": "总营收3850万元，净利润920万元"},
+    {"query": "各产品线的Q2营收明细在哪里能看到？", "expected_chunk_ids": [], "expected_snippets": ["产品线销售明细"]},
+    {"query": "西南大区Q2的营收和环比增速是多少？", "expected_chunk_ids": [], "expected_snippets": ["西南大区"]},
+    {"query": "Q2的研发成本是多少，占营收多少？", "expected_chunk_ids": [], "expected_snippets": ["研发成本：1,150万元（占营收29.9%）"]},
+    {"query": "公司的客户留存率和客户终身价值是多少？", "expected_chunk_ids": [], "expected_snippets": ["客户留存率：97.1%", "客户终身价值（LTV）：平均18.6万元"]},
+    {"query": "公司对Q3的业绩指引是什么？", "expected_chunk_ids": [], "expected_snippets": ["公司管理层预计Q3营收在4,200万至4,500万元之间"]},
+    {"query": "DataFlow 3.0 版本是什么时候正式发布的？", "expected_chunk_ids": [], "expected_snippets": ["6月15日，DataFlow 3.0版本正式发布"]},
+    {"query": "智能CRM基础版价格有什么调整？", "expected_chunk_ids": [], "expected_snippets": ["智能CRM基础版价格从3.2万元/年上调至4.0万元/年"]},
+
+    {"query": "优选商城是一个什么样的平台？", "expected_chunk_ids": [], "expected_snippets": ["优选商城是一家专注于家居生活品类的B2C电商平台"]},
+    {"query": "618大促期间总GMV是多少？", "expected_chunk_ids": [], "expected_snippets": ["总GMV：9,200万元（占全月71.9%）"]},
+    {"query": "哪个品类6月GMV最高？", "expected_chunk_ids": [], "expected_snippets": ["家居家纺"]},
+    {"query": "APP端的GMV占比是多少？", "expected_chunk_ids": [], "expected_snippets": ["APP端"]},
+    {"query": "东南仓（厦门）是什么时候投入使用的？", "expected_chunk_ids": [], "expected_snippets": ["6月10日，东南仓（厦门）正式投入使用"]},
+    {"query": "优选商城6月的净利润和净利率是多少？", "expected_chunk_ids": [], "expected_snippets": ["6月净利润：550万元，净利率13.1%"]},
+    {"query": "会员Plus服务的年费是多少？", "expected_chunk_ids": [], "expected_snippets": ["会员Plus"]}
+  ]
+}

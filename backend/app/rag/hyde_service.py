@@ -1,37 +1,34 @@
 # backend/app/utils/hyde_service.py
-from typing import Optional,List,Dict
+
 from langchain_core.documents import Document
 
+from backend.app.core.config import settings
 from backend.app.utils.models_factory import model_factory
 from backend.app.utils.vector_store import get_vector_store
-from backend.app.core.config import settings
+
 
 class HyDEService:
     """
     HyDE（Hypothetical Document Embeddings）检索服务
-    
+
     原理：先用LLM根据用户问题生成一篇假设性文档，
     再用这篇假设文档去做向量检索，提升检索准确率。
     """
+
     # ====== 初始化 ======
-    def __init__(
-        self,
-        collection_name:str,
-        llm_provider:str = None,
-        temperature:float = 0.7
-    ):
+    def __init__(self, collection_name: str, llm_provider: str = None, temperature: float = 0.7):
         if llm_provider is None:
             llm_provider = settings.DEFAULT_LLM_PROVIDER
-        self.llm = model_factory.get_llm_model(provider=llm_provider,temperature=temperature)
+        self.llm = model_factory.get_llm_model(provider=llm_provider, temperature=temperature)
         self.vector_store = get_vector_store(collection_name=collection_name)
 
     # ====== 提示词构建 ======
 
-    def build_hyde_prompt(self,query:str)->str:
+    def build_hyde_prompt(self, query: str) -> str:
         """
         构建让LLM生成假设文档的提示词
         Args:
-            query: 用户原始问题 
+            query: 用户原始问题
         Returns:
             构建好的prompt字符串
         """
@@ -49,7 +46,7 @@ class HyDEService:
 
     # ====== 假设性文档生成 ======
 
-    def generate_hypothetical_doc(self,query:str)->str:
+    def generate_hypothetical_doc(self, query: str) -> str:
         """
         调用LLM生成假设性文档
         Args:
@@ -65,11 +62,11 @@ class HyDEService:
 
     def retrieve_with_hyde(
         self,
-        query:str,
-        top_k:int = 6,
-        filter_dict:Optional[Dict[str,any]] = None,
-        collection_name: Optional[str] = None,
-    )->List[Document]:
+        query: str,
+        top_k: int = 6,
+        filter_dict: dict[str, any] | None = None,
+        collection_name: str | None = None,
+    ) -> list[Document]:
         """
         使用HyDE方式检索相关文档
         流程：用户问题 → LLM生成假设文档 → 用假设文档检索 → 返回结果
@@ -80,24 +77,20 @@ class HyDEService:
             collection_name: 知识库名称
         Returns:
             相关文档列表
-        """    
+        """
         hypothetical_doc = self.generate_hypothetical_doc(query)
         vector_store = get_vector_store(collection_name=collection_name)
-        results = vector_store.search(
-            query=hypothetical_doc,
-            top_k=top_k,
-            filter_dict=filter_dict
-        )
+        results = vector_store.search(query=hypothetical_doc, top_k=top_k, filter_dict=filter_dict)
         return results
 
     def retrieve_with_hyde_and_score(
         self,
-        query:str,
-        top_k:int = 6,
-        score_threshold:float=0.7,
-        filter_dict:Optional[Dict[str,any]] = None,
-        collection_name: Optional[str] = None
-    )->List[tuple[Document,float]]:
+        query: str,
+        top_k: int = 6,
+        score_threshold: float = 0.7,
+        filter_dict: dict[str, any] | None = None,
+        collection_name: str | None = None,
+    ) -> list[tuple[Document, float]]:
         """
         HyDE检索（带相似度分数）
         Args:
@@ -110,28 +103,35 @@ class HyDEService:
             (文档, 分数) 元组列表
         """
         hypothetical_doc = self.generate_hypothetical_doc(query)
-        vector_store = get_vector_store(collection_name=collection_name)
         results = self.vector_store.search_with_score(
             query=hypothetical_doc,
             top_k=top_k,
             filter_dict=filter_dict,
-            score_threshold= score_threshold
+            score_threshold=score_threshold,
         )
         return results
+
 
 # ====== 全局实例（延迟初始化）======
 _hyde_service_instance = None
 
+
 def get_hyde_service(llm_provider: str = None):
     global _hyde_service_instance
     if _hyde_service_instance is None:
-        _hyde_service_instance = HyDEService(settings.CHROMA_COLLECTION_NAME, llm_provider=llm_provider)
+        _hyde_service_instance = HyDEService(
+            settings.CHROMA_COLLECTION_NAME, llm_provider=llm_provider
+        )
     elif llm_provider is not None and _hyde_service_instance.llm_provider != llm_provider:
-        _hyde_service_instance = HyDEService(settings.CHROMA_COLLECTION_NAME, llm_provider=llm_provider)
+        _hyde_service_instance = HyDEService(
+            settings.CHROMA_COLLECTION_NAME, llm_provider=llm_provider
+        )
     return _hyde_service_instance
+
 
 class _HyDEServiceProxy:
     def __getattr__(self, name):
         return getattr(get_hyde_service(), name)
+
 
 hyde_service = _HyDEServiceProxy()

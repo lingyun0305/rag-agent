@@ -6,18 +6,19 @@ MySQL + ChromaDB 混合架构：
 - ChromaDB: 存储向量索引，用于语义检索
 """
 
-from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
-from sqlalchemy import select, update, delete
-from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Any
+
 import chromadb
 from chromadb.config import Settings
+from sqlalchemy import select, update
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.db.db_config import AsyncSessionLocal, Base
+from backend.app.common.logger import logger
+from backend.app.core.config import settings
 from backend.app.models.long_term_memory import UserMemory
 from backend.app.utils.models_factory import model_factory
-from backend.app.core.config import settings
-
+from backend.db.db_config import AsyncSessionLocal
 
 # ====== ChromaDB 配置 ======
 MEMORY_CHROMA_PATH = settings.VECTOR_STORE_PATH + "/memory"
@@ -38,12 +39,9 @@ class LongTermMemoryService:
     def __init__(self):
         # ChromaDB 客户端
         self.chroma_client = chromadb.PersistentClient(
-            path=MEMORY_CHROMA_PATH,
-            settings=Settings(anonymized_telemetry=False)
+            path=MEMORY_CHROMA_PATH, settings=Settings(anonymized_telemetry=False)
         )
-        self.collection = self.chroma_client.get_or_create_collection(
-            name=MEMORY_COLLECTION_NAME
-        )
+        self.collection = self.chroma_client.get_or_create_collection(name=MEMORY_COLLECTION_NAME)
 
         # Embedding 模型
         self.embedder = model_factory.get_embedding_model(provider="bge")
@@ -61,12 +59,15 @@ class LongTermMemoryService:
 
     async def memorize(
         self,
-        user_id: int,
+        user_id: str,
         content: str,
         memory_type: str = "preference",
         importance: float = None,
         db: AsyncSession = None,
-    ) -> Dict[str, Any]:
+        source: str = "auto",
+        source_session_id: str | None = None,
+        agent_id: str | None = None,
+    ) -> dict[str, Any]:
         """
         写入长期记忆
 
@@ -76,6 +77,9 @@ class LongTermMemoryService:
             memory_type: 记忆类型（preference/event，兼容旧值fact/task）
             importance: 重要度评分（可选，自动评估）
             db: 数据库会话
+            source: 来源 auto(AI自动提取) / explicit(用户说记住)
+            source_session_id: 来源会话 ID
+            agent_id: Agent 专属记忆时绑定的 Agent ID（None=全局记忆）
 
         Returns:
             {"memory_id": int, "chroma_id": str}
@@ -94,12 +98,21 @@ class LongTermMemoryService:
         # 生成向量
         embedding = self.embedder.embed_query(content)
 
-        # 写入 MySQL
+        # 【修复】主键必须显式生成：user_memory.id 是 String(12) 主键且表结构无默认值，
+        # 此前不传 id → MySQL 报 (1364, "Field 'id' doesn't have a default value")，
+        # 上线以来长期记忆**从未真正落库**（只在日志里刷 warning）。
+        from backend.app.services.auth import generate_id
+
         memory_obj = UserMemory(
+            id=generate_id(),
             user_id=user_id,
             content=content,
             memory_type=memory_type,
             importance=importance,
+            is_global=agent_id is None,
+            agent_id=agent_id,
+            source=source,
+            source_session_id=source_session_id,
             status="active",
             create_time=datetime.now(),
             access_count=0,
@@ -121,14 +134,16 @@ class LongTermMemoryService:
             ids=[chroma_id],
             embeddings=[embedding],
             documents=[content],
-            metadatas=[{
-                "user_id": user_id,
-                "memory_id": memory_obj.id,
-                "memory_type": memory_type,
-                "importance": importance,
-                "create_time": str(datetime.now()),
-                "status": "active",
-            }]
+            metadatas=[
+                {
+                    "user_id": user_id,
+                    "memory_id": memory_obj.id,
+                    "memory_type": memory_type,
+                    "importance": importance,
+                    "create_time": str(datetime.now()),
+                    "status": "active",
+                }
+            ],
         )
 
         # 更新 MySQL 的 chroma_id
@@ -147,12 +162,12 @@ class LongTermMemoryService:
 
     async def recall(
         self,
-        user_id: int,
+        user_id: str,
         query: str,
         top_k: int = 5,
-        memory_types: List[str] = None,
+        memory_types: list[str] = None,
         db: AsyncSession = None,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         召回相关长期记忆
 
@@ -174,9 +189,14 @@ class LongTermMemoryService:
         query_embedding = self.embedder.embed_query(query)
 
         # ChromaDB 向量检索
-        where_filter = {"user_id": user_id, "status": "active"}
+        # 【修复】Chroma 的 where 只接受"恰好一个操作符"：多个平铺键会直接抛
+        # ValueError: Expected where to have exactly one operator，
+        # 导致长期记忆召回**必然失败**（写入修好前也一直没暴露）。
+        # 正确写法是用 $and 显式组合。
+        conditions: list[dict] = [{"user_id": user_id}, {"status": "active"}]
         if memory_types:
-            where_filter["memory_type"] = {"$in": memory_types}
+            conditions.append({"memory_type": {"$in": memory_types}})
+        where_filter = conditions[0] if len(conditions) == 1 else {"$and": conditions}
 
         results = self.collection.query(
             query_embeddings=[query_embedding],
@@ -196,9 +216,8 @@ class LongTermMemoryService:
 
         memories = []
         stmt = select(UserMemory).where(
-                UserMemory.id.in_(memory_ids),
-                UserMemory.status == "active"
-            )
+            UserMemory.id.in_(memory_ids), UserMemory.status == "active"
+        )
         if db is None:
             async with AsyncSessionLocal() as session:
                 result = await session.execute(stmt)
@@ -208,28 +227,47 @@ class LongTermMemoryService:
             memory_objs = result.scalars().all()
 
         for obj in memory_objs:
-            memories.append({
-                "content": obj.content,
-                "importance": obj.importance,
-                "memory_type": obj.memory_type,
-                "created_at": str(obj.create_time),
-                "access_count": obj.access_count,
-                "memory_id": obj.id,
-            })
+            memories.append(
+                {
+                    "content": obj.content,
+                    "importance": obj.importance,
+                    "memory_type": obj.memory_type,
+                    "created_at": str(obj.create_time),
+                    "access_count": (obj.access_count or 0) + 1,
+                    "memory_id": obj.id,
+                }
+            )
 
-            # 更新访问记录
-            obj.last_accessed = datetime.now()
-            obj.access_count += 1
+        # 【修复】命中统计必须落库：此前只改了 ORM 对象却从未 commit，
+        # last_accessed / access_count 永远停在初始值（遗忘策略因此失真）。
+        try:
+            update_stmt = (
+                update(UserMemory)
+                .where(UserMemory.id.in_(memory_ids))
+                .values(
+                    last_accessed=datetime.now(),
+                    access_count=UserMemory.access_count + 1,
+                )
+            )
+            if db is None:
+                async with AsyncSessionLocal() as session:
+                    await session.execute(update_stmt)
+                    await session.commit()
+            else:
+                await db.execute(update_stmt)
+                await db.commit()
+        except Exception as e:
+            logger.warning(f"更新长期记忆命中统计失败（不影响召回）: {e}")
 
         return memories
 
     async def forget(
         self,
-        user_id: int = None,
+        user_id: str = None,
         days_old: int = 90,
         importance_threshold: float = 0.3,
         db: AsyncSession = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         遗忘机制：清理低重要度/过期记忆
 
@@ -247,8 +285,7 @@ class LongTermMemoryService:
         # 构建查询条件
         conditions = [
             UserMemory.status == "active",
-            (UserMemory.importance < importance_threshold) |
-            (UserMemory.create_time < cutoff_date)
+            (UserMemory.importance < importance_threshold) | (UserMemory.create_time < cutoff_date),
         ]
         if user_id:
             conditions.append(UserMemory.user_id == user_id)
@@ -271,9 +308,9 @@ class LongTermMemoryService:
         # MySQL 标记为 forgotten（软删除）
         memory_ids = [m.id for m in memories_to_delete]
         if memory_ids:
-            update_stmt = update(UserMemory).where(
-                UserMemory.id.in_(memory_ids)
-            ).values(status="forgotten")
+            update_stmt = (
+                update(UserMemory).where(UserMemory.id.in_(memory_ids)).values(status="forgotten")
+            )
             if db is None:
                 async with AsyncSessionLocal() as session:
                     await session.execute(update_stmt)
@@ -285,7 +322,7 @@ class LongTermMemoryService:
         return {
             "deleted_mysql": len(memory_ids),
             "deleted_chroma": len(chroma_ids),
-            "reason": "low_importance_or_expired"
+            "reason": "low_importance_or_expired",
         }
 
     async def _evaluate_importance(self, content: str, memory_type: str) -> float:
@@ -313,9 +350,9 @@ class LongTermMemoryService:
 
     async def get_user_stats(
         self,
-        user_id: int,
+        user_id: str,
         db: AsyncSession = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         获取用户记忆统计信息
 
@@ -327,9 +364,8 @@ class LongTermMemoryService:
             {"total": int, "by_type": dict, "avg_importance": float}
         """
         stmt = select(UserMemory).where(
-                UserMemory.user_id == user_id,
-                UserMemory.status == "active"
-            )
+            UserMemory.user_id == user_id, UserMemory.status == "active"
+        )
         if db is None:
             async with AsyncSessionLocal() as session:
                 result = await session.execute(stmt)

@@ -9,9 +9,8 @@ import json
 from datetime import datetime
 from pathlib import Path
 
+from backend.app.agent.tools.registry import init_default_tools, tool_registry
 from backend.app.utils.models_factory import modelFactory
-from backend.app.agent.tools.registry import tool_registry, init_default_tools
-
 
 # ====== 测试用例 ======
 
@@ -126,10 +125,7 @@ class PromptEvaluator:
     def __init__(self, llm_provider: str = "qwen", temperature: float = 0.1):
         self.llm_provider = llm_provider
         self.temperature = temperature
-        self.llm = modelFactory.get_llm_model(
-            provider=llm_provider,
-            temperature=temperature
-        )
+        self.llm = modelFactory.get_llm_model(provider=llm_provider, temperature=temperature)
         init_default_tools()
         self.tools = tool_registry.get_langchain_tools()
         self.llm_with_tools = self.llm.bind_tools(self.tools)
@@ -159,7 +155,7 @@ class PromptEvaluator:
         Returns:
             测试结果
         """
-        from langchain_core.messages import SystemMessage, HumanMessage
+        from langchain_core.messages import HumanMessage, SystemMessage
 
         messages = [
             SystemMessage(content=system_prompt),
@@ -317,7 +313,7 @@ class PromptEvaluator:
 
     def _print_summary(self, result: dict):
         """打印单版本评测摘要"""
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"版本: {result['version']} ({result['name']})")
         print(f"描述: {result['description']}")
         print(f"Prompt长度: {result['prompt_length']} 字符")
@@ -325,22 +321,24 @@ class PromptEvaluator:
         print(f"答案匹配率: {result['overall']['answer_match_rate']:.2%}")
         print(f"工具调用准确率: {result['overall']['tool_correct_rate']:.2%}")
         print(f"幻觉率: {result['overall']['hallucination_rate']:.2%}")
-        print(f"{'='*60}\n")
+        print(f"{'=' * 60}\n")
 
     def generate_report(self, all_results: dict) -> str:
         """生成评测报告（Markdown 表格）"""
         rows = []
         for version, result in all_results.items():
-            rows.append([
-                version,
-                result["name"],
-                f"{result['overall']['avg_score']:.2f}",
-                f"{result['overall']['answer_match_rate']:.2%}",
-                f"{result['overall']['tool_correct_rate']:.2%}",
-                f"{result['overall']['hallucination_rate']:.2%}",
-                result["prompt_length"],
-                result["description"],
-            ])
+            rows.append(
+                [
+                    version,
+                    result["name"],
+                    f"{result['overall']['avg_score']:.2f}",
+                    f"{result['overall']['answer_match_rate']:.2%}",
+                    f"{result['overall']['tool_correct_rate']:.2%}",
+                    f"{result['overall']['hallucination_rate']:.2%}",
+                    result["prompt_length"],
+                    result["description"],
+                ]
+            )
 
         # 排序（按平均分数降序）
         rows.sort(key=lambda x: float(x[2]), reverse=True)
@@ -356,16 +354,16 @@ class PromptEvaluator:
 
 async def main():
     """主函数"""
-    print("="*60)
+    print("=" * 60)
     print("Prompt 多版本对比实验")
-    print("="*60)
+    print("=" * 60)
 
     evaluator = PromptEvaluator(llm_provider="qwen", temperature=0.1)
     results = await evaluator.run_all_versions()
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("评测报告（Markdown表格）")
-    print("="*60)
+    print("=" * 60)
     report = evaluator.generate_report(results)
     print(report)
 

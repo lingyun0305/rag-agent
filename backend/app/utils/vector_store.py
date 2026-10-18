@@ -1,16 +1,16 @@
 # backend/app/utils/vector_store.py
-from typing import Optional,List,Dict
-from langchain_community.vectorstores import Chroma
-from langchain_core.documents import Document
-from langchain.embeddings import Embeddings
 import os
 import threading
 import uuid
 
-from backend.app.core.config import settings
-from backend.app.utils.models_factory import model_factory
+from langchain.embeddings import Embeddings
+from langchain_community.vectorstores import Chroma
+from langchain_core.documents import Document
+
 from backend.app.common.exceptions import BusinessException
 from backend.app.common.logger import logger
+from backend.app.core.config import settings
+from backend.app.utils.models_factory import model_factory
 
 
 class VectorStoreUtil:
@@ -18,18 +18,19 @@ class VectorStoreUtil:
     向量数据库工具类
     支持Chroma向量库的文档增删改查操作
     """
+
     SUMMARY_COLLECTION_NAME = "_kb_summaries_"
-    
+
     # 实例缓存，确保同一个 collection_name 返回同一个实例
-    _instances: Dict[str, 'VectorStoreUtil'] = {}
+    _instances: dict[str, "VectorStoreUtil"] = {}
     _lock = threading.Lock()
-    
+
     # ====== 初始化 ======
     def __init__(
         self,
-        collection_name:str = "default_collection",
-        persist_directory:Optional[str] = None,
-        embedding_provider:str = "bge"
+        collection_name: str = "default_collection",
+        persist_directory: str | None = None,
+        embedding_provider: str = "bge",
     ):
         """
         初始化向量存储工具
@@ -42,26 +43,28 @@ class VectorStoreUtil:
         self.persist_directory = persist_directory or settings.VECTOR_STORE_PATH or "./chroma_db"
         self.embedding_provider = embedding_provider
 
-        self._client: Optional[Chroma] = None
-        self._embedding_function: Optional[Embeddings] = None
-        self._summary_client: Optional[Chroma] = None
-        self._is_empty_cache: Optional[bool] = None
+        self._client: Chroma | None = None
+        self._embedding_function: Embeddings | None = None
+        self._summary_client: Chroma | None = None
+        self._is_empty_cache: bool | None = None
         self._empty_cache_time: float = 0
 
     # 初始化向量数据库
     @property
-    def embedding_function(self)->Embeddings:
+    def embedding_function(self) -> Embeddings:
         """懒加载embedding模型"""
         if self._embedding_function is None:
             try:
-                self._embedding_function = model_factory.get_embedding_model(self.embedding_provider)
+                self._embedding_function = model_factory.get_embedding_model(
+                    self.embedding_provider
+                )
             except Exception as e:
                 logger.error(f"Embedding模型加载失败: {e}")
                 raise BusinessException(f"Embedding模型加载失败: {e}")
         return self._embedding_function
-    
+
     @property
-    def get_client(self)->Chroma:
+    def get_client(self) -> Chroma:
         """获取或初始化Chroma客户端"""
         if self._client is None:
             self._init_vector_store()
@@ -70,19 +73,15 @@ class VectorStoreUtil:
     def _init_vector_store(self):
         """初始化向量数据库"""
         os.makedirs(self.persist_directory, exist_ok=True)
-        self._client= Chroma(
+        self._client = Chroma(
             collection_name=self.collection_name,
             embedding_function=self.embedding_function,
-            persist_directory=self.persist_directory
+            persist_directory=self.persist_directory,
         )
-    
+
     # ====== 写入操作 ======
 
-    def add_documents(
-        self,
-        docs:List[Document],
-        ids:Optional[List[str]] = None
-    )->List[str]:
+    def add_documents(self, docs: list[Document], ids: list[str] | None = None) -> list[str]:
         """
         添加文档到向量库
         Args:
@@ -98,19 +97,16 @@ class VectorStoreUtil:
             # ID 格式：{source}_{chunk_index}_{uuid}
             ids = []
             for i, doc in enumerate(docs):
-                source = doc.metadata.get('source', 'unknown') if doc.metadata else 'unknown'
-                chunk_index = doc.metadata.get('chunk_index', i) if doc.metadata else i
+                source = doc.metadata.get("source", "unknown") if doc.metadata else "unknown"
+                chunk_index = doc.metadata.get("chunk_index", i) if doc.metadata else i
                 unique_id = f"{source}_{chunk_index}_{uuid.uuid4().hex[:8]}"
                 ids.append(unique_id)
         logger.info(f"添加文档到向量库: count={len(docs)}, collection={self.collection_name}")
         return self.get_client.add_documents(documents=docs, ids=ids)
 
     def add_texts(
-        self,
-        texts:List[str],
-        metadatas:Optional[List[str]] = None,
-        ids:Optional[List[str]] = None
-    )->List[str]:
+        self, texts: list[str], metadatas: list[str] | None = None, ids: list[str] | None = None
+    ) -> list[str]:
         """
         直接添加文本到向量库
         Args:
@@ -119,20 +115,17 @@ class VectorStoreUtil:
             ids: 自定义ID
         Returns:
             文档ID列表
-        """    
+        """
         if texts is None:
             return []
         else:
-            return self.get_client.add_texts(texts=texts,metadatas=metadatas,ids=ids)
-    
+            return self.get_client.add_texts(texts=texts, metadatas=metadatas, ids=ids)
+
     # ====== 检索操作 ======
 
     def search(
-        self,
-        query: str,
-        top_k: int = 6,
-        filter_dict:Optional[Dict[str,any]] = None
-    )->list[Document]:
+        self, query: str, top_k: int = 6, filter_dict: dict[str, any] | None = None
+    ) -> list[Document]:
         """
         相似度检索
         Args:
@@ -142,19 +135,15 @@ class VectorStoreUtil:
         Returns:
             相关文档列表
         """
-        return self.get_client.similarity_search(
-            query=query,
-            k=top_k,
-            filter=filter_dict
-        )
-    
+        return self.get_client.similarity_search(query=query, k=top_k, filter=filter_dict)
+
     def search_with_score(
         self,
-        query:str,
-        top_k:int = 6,
-        filter_dict:Optional[Dict[str,any]]=None,
-        score_threshold:Optional[float]=None
-    )->List[tuple[Document,float]]:
+        query: str,
+        top_k: int = 6,
+        filter_dict: dict[str, any] | None = None,
+        score_threshold: float | None = None,
+    ) -> list[tuple[Document, float]]:
         """
         相似度检索（带分数）
         Args:
@@ -166,21 +155,15 @@ class VectorStoreUtil:
             (文档, 相似度分数) 元组列表
         """
         results = self.get_client.similarity_search_with_score(
-            query=query,
-            k=top_k,
-            filter=filter_dict
+            query=query, k=top_k, filter=filter_dict
         )
         if score_threshold is not None:
-            results=[(doc,score) for doc,score in results if score >= score_threshold]
+            results = [(doc, score) for doc, score in results if score >= score_threshold]
         return results
 
     def mmr_search(
-        self,
-        query:str,
-        top_k:int = 6,
-        fetch_k:int = 20,
-        lambda_mult:float = 0.5 
-    )->List[Document]:
+        self, query: str, top_k: int = 6, fetch_k: int = 20, lambda_mult: float = 0.5
+    ) -> list[Document]:
         """
         MMR多样性检索
         Args:
@@ -192,15 +175,12 @@ class VectorStoreUtil:
             相关文档列表
         """
         return self.get_client.max_marginal_relevance_search(
-            query=query,
-            k=top_k,
-            fetch_k=fetch_k,
-            lambda_mult=lambda_mult
+            query=query, k=top_k, fetch_k=fetch_k, lambda_mult=lambda_mult
         )
 
     # ====== 删除操作 ======
 
-    def delete_by_ids(self,ids:list[str])->bool:
+    def delete_by_ids(self, ids: list[str]) -> bool:
         """
         根据ID删除文档
         Args:
@@ -212,14 +192,11 @@ class VectorStoreUtil:
             return
         try:
             self._client.delete(ids=ids)
-        except Exception as e:
+        except Exception:
             logger.error("向量数据库删除文档失败：{e}")
-            raise BusinessException(
-                code=500,
-                msg="向量库执行删除操作失败"
-            )
+            raise BusinessException(code=500, msg="向量库执行删除操作失败")
 
-    def delete_by_filter(self,filter_dict:Dict[str,any])->bool:
+    def delete_by_filter(self, filter_dict: dict[str, any]) -> bool:
         """
         根据条件删除文档
         Args:
@@ -232,17 +209,13 @@ class VectorStoreUtil:
         try:
             self._client.delete(where=filter_dict)
             return True
-        except Exception as e:
+        except Exception:
             logger.error("向量库按条件删除文档失败：{e}")
-            raise BusinessException(
-                code=500,
-                msg="向量库执行按条件删除操作失败"
-            )
-
+            raise BusinessException(code=500, msg="向量库执行按条件删除操作失败")
 
     # ====== 更新操作 ======
 
-    def update_document(self,doc_id:str,new_doc:Document)->bool:
+    def update_document(self, doc_id: str, new_doc: Document) -> bool:
         """
         更新指定文档（先删除再添加）
         Args:
@@ -253,39 +226,35 @@ class VectorStoreUtil:
         """
         try:
             self.delete_by_ids([doc_id])
-            self.add_documents(new_doc,doc_id)
+            self.add_documents(new_doc, doc_id)
             return True
-        except Exception as e:
+        except Exception:
             logger.error("更新文档失败:{e}")
-            raise BusinessException(
-                code=500,
-                msg="向量库执行更新文档失败"
-            )
+            raise BusinessException(code=500, msg="向量库执行更新文档失败")
 
     # ====== 管理操作 ======
 
-    def get_collection_status(self)->Dict[str,any]:
+    def get_collection_status(self) -> dict[str, any]:
         """
         获取集合统计信息
         Returns:
             统计信息字典
         """
         if self._client is None:
-            return {"count":0}
+            return {"count": 0}
         try:
             count = self._client._collection.count()
-            logger.info(f"向量库状态：集合={self.collection_name}, 文档数={count}, 存储路径={self.persist_directory}")
-            return {
-                "collection_name":self.collection_name,
-                "document_count":count,
-                "persist_directory":self.persist_directory
-            }
-        except Exception as e:
-            logger.error("获取向量库统计信息失败：{e}")
-            raise BusinessException(
-                code=500,
-                msg="获取向量库统计信息操作失败"
+            logger.info(
+                f"向量库状态：集合={self.collection_name}, 文档数={count}, 存储路径={self.persist_directory}"
             )
+            return {
+                "collection_name": self.collection_name,
+                "document_count": count,
+                "persist_directory": self.persist_directory,
+            }
+        except Exception:
+            logger.error("获取向量库统计信息失败：{e}")
+            raise BusinessException(code=500, msg="获取向量库统计信息操作失败")
 
     def is_collection_empty(self, force_check: bool = False) -> bool:
         """
@@ -297,14 +266,16 @@ class VectorStoreUtil:
             True表示空，False表示有文档
         """
         import time
+
         now = time.time()
-        
+
         if not force_check and self._is_empty_cache is not None:
             if now - self._empty_cache_time < 300:
                 return self._is_empty_cache
-        
+
         try:
             import chromadb
+
             client = chromadb.PersistentClient(path=self.persist_directory)
             try:
                 collection = client.get_collection(self.collection_name)
@@ -332,11 +303,11 @@ class VectorStoreUtil:
             self._summary_client = Chroma(
                 collection_name=self.SUMMARY_COLLECTION_NAME,
                 embedding_function=self.embedding_function,
-                persist_directory=self.persist_directory
+                persist_directory=self.persist_directory,
             )
         return self._summary_client
 
-    def set_kb_summary(self, kb_name: str, summary: str, metadata: Optional[Dict] = None):
+    def set_kb_summary(self, kb_name: str, summary: str, metadata: dict | None = None):
         """
         设置知识库概要
         Args:
@@ -347,23 +318,15 @@ class VectorStoreUtil:
         client = self._get_summary_client()
         doc_metadata = metadata or {}
         doc_metadata["kb_name"] = kb_name
-        
+
         existing = client.get(ids=[kb_name])
         if existing["ids"]:
-            client.update(
-                ids=[kb_name],
-                documents=[summary],
-                metadatas=[doc_metadata]
-            )
+            client.update(ids=[kb_name], documents=[summary], metadatas=[doc_metadata])
         else:
-            client.add(
-                ids=[kb_name],
-                documents=[summary],
-                metadatas=[doc_metadata]
-            )
+            client.add(ids=[kb_name], documents=[summary], metadatas=[doc_metadata])
         logger.info(f"知识库概要已更新: {kb_name}")
 
-    def get_kb_summary(self, kb_name: str) -> Optional[str]:
+    def get_kb_summary(self, kb_name: str) -> str | None:
         """
         获取知识库概要
         Args:
@@ -381,7 +344,9 @@ class VectorStoreUtil:
             logger.warning(f"获取知识库概要失败: {e}")
             return None
 
-    def search_relevant_kbs(self, query: str, top_k: int = 3, similarity_threshold: float = 0.3) -> List[Dict]:
+    def search_relevant_kbs(
+        self, query: str, top_k: int = 3, similarity_threshold: float = 0.3
+    ) -> list[dict]:
         """
         根据查询搜索相关的知识库
         Args:
@@ -394,18 +359,14 @@ class VectorStoreUtil:
         try:
             client = self._get_summary_client()
             results = client.similarity_search_with_score(query, k=top_k)
-            
+
             relevant = []
             for doc, score in results:
                 kb_name = doc.metadata.get("kb_name", "")
                 summary = doc.page_content
                 if score >= similarity_threshold:
-                    relevant.append({
-                        "kb_name": kb_name,
-                        "summary": summary,
-                        "similarity": score
-                    })
-            
+                    relevant.append({"kb_name": kb_name, "summary": summary, "similarity": score})
+
             logger.info(f"查询 '{query}' 匹配到 {len(relevant)} 个知识库")
             return relevant
         except Exception as e:
@@ -423,19 +384,22 @@ class VectorStoreUtil:
         """
         target_kb = kb_name or self.collection_name
         summaries = self.search_relevant_kbs(query, top_k=5, similarity_threshold=0.3)
-        
+
         for item in summaries:
             if item["kb_name"] == target_kb:
-                logger.info(f"查询 '{query}' 与知识库 '{target_kb}' 相关（相似度: {item['similarity']:.3f}）")
+                logger.info(
+                    f"查询 '{query}' 与知识库 '{target_kb}' 相关（相似度: {item['similarity']:.3f}）"
+                )
                 return True
-        
+
         logger.info(f"查询 '{query}' 与知识库 '{target_kb}' 不相关")
         return False
-         
-    def list_collections(self)->List[Dict]:
+
+    def list_collections(self) -> list[dict]:
         """列出所有集合，返回包含名称、文档数、metadata等信息的列表"""
         try:
             import chromadb
+
             client = chromadb.PersistentClient(path=self.persist_directory)
             collections = client.list_collections()
             result = []
@@ -446,38 +410,69 @@ class VectorStoreUtil:
                 except Exception:
                     count = 0
                     metadata = {}
-                result.append({
-                    "name": c.name,
-                    "document_count": count,
-                    "metadata": metadata
-                })
+                result.append({"name": c.name, "document_count": count, "metadata": metadata})
             return result
         except Exception as e:
             logger.error(f"向量库获取集合列表失败: {e}")
-            raise BusinessException(
-                code=500,
-                msg="向量库获取集合列表操作失败"
-            )
-        
-    def clear_collection(self)->bool:
+            raise BusinessException(code=500, msg="向量库获取集合列表操作失败")
+
+    def clear_collection(self) -> bool:
         """清空当前集合中的所有文档"""
         try:
-            self.get_client.delete_collection()
+            self.get_client().delete_collection()
             self._client = None
             logger.info("向量集合已清空，客户端实例已重置")
             return True
-        except Exception as e:
+        except Exception:
             logger.error("清空集合执行异常")
-            raise BusinessException(
-                code=500,
-                msg="清空向量知识库失败"
-            )
-    
+            raise BusinessException(code=500, msg="清空向量知识库失败")
+
+    def get_all_documents(self) -> list[Document]:
+        """
+        获取集合中的所有文档（用于 BM25 索引重建等场景）。
+        分批读取避免一次性加载过大集合导致内存问题。
+        """
+        from langchain_core.documents import Document
+
+        try:
+            import chromadb
+
+            client = chromadb.PersistentClient(path=self.persist_directory)
+            collection = client.get_collection(self.collection_name)
+            total = collection.count()
+            if total == 0:
+                return []
+
+            all_docs: list[Document] = []
+            offset = 0
+            batch_size = 1000  # ChromaDB 默认 get 限制
+
+            while offset < total:
+                results = collection.get(
+                    limit=batch_size,
+                    offset=offset,
+                    include=["documents", "metadatas"],
+                )
+                for doc_text, meta in zip(results["documents"], results["metadatas"]):
+                    all_docs.append(Document(page_content=doc_text, metadata=meta or {}))
+                offset += batch_size
+
+                # 如果这批结果少于 batch_size，说明已经到底了
+                if len(results["documents"]) < batch_size:
+                    break
+
+            logger.info(f"向量库 {self.collection_name} 读取全量文档: {len(all_docs)} 条")
+            return all_docs
+        except Exception as e:
+            logger.error(f"获取向量库全量文档失败 ({self.collection_name}): {e}")
+            return []
+
     # ====== 获取向量存储实例 ======
+
+
 def get_vector_store(
-    collection_name:str = "default_collection",
-    embedding_provider:str = "bge"
-)->VectorStoreUtil:
+    collection_name: str = "default_collection", embedding_provider: str = "bge"
+) -> VectorStoreUtil:
     """
     获取向量存储实例（使用缓存，确保同一个 collection_name 返回同一个实例）
     Args:
@@ -488,18 +483,18 @@ def get_vector_store(
     """
     # 使用缓存键，确保同一个 collection_name + embedding_provider 返回同一个实例
     cache_key = f"{collection_name}_{embedding_provider}"
-    
+
     if cache_key not in VectorStoreUtil._instances:
         with VectorStoreUtil._lock:
             # 双重检查锁定
             if cache_key not in VectorStoreUtil._instances:
                 VectorStoreUtil._instances[cache_key] = VectorStoreUtil(
-                    collection_name=collection_name,
-                    embedding_provider=embedding_provider
+                    collection_name=collection_name, embedding_provider=embedding_provider
                 )
                 logger.debug(f"创建新的 VectorStoreUtil 实例: {cache_key}")
-    
+
     return VectorStoreUtil._instances[cache_key]
+
 
 # 实例化全局向量库
 vector_store_util = VectorStoreUtil()

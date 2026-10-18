@@ -1,7 +1,7 @@
 {
-  "version": "1.2",
+  "version": "1.3",
   "created_at": "2026-08-18",
-  "description": "企业研发辅助智能体评测用例集（v1.2，70条；已加固答案匹配/拒答口径，消除 echo/通用词假成功与拒答措辞假失败；file_read 含 .txt 与 .md 两种格式）",
+  "description": "企业研发辅助智能体评测用例集（v1.3，70条；v1.2 基础上修正 4 条标注口径：tool_006 补'感谢'、file_003 补单位换算变体 970,000、hall_003 接受'明确否定'类合法答案、ld_003 不再要求重复检索上一轮已给规则；配套 metrics.py v1.3 两级工具口径：tool_call 类严格集合相等，其余类期望⊆实际）",
   "categories": [
     "knowledge_query",
     "calculation",
@@ -493,7 +493,7 @@
         "file_reader"
       ],
       "difficulty": "easy",
-      "notes": "fixture 位于 ./knowledge_base/team_weekly_2026W33.txt，未入库向量库，必须用 file_reader 才能读到；KNOWLEDGE_FILE_PATH 须指向项目根 knowledge_base（评测从项目根运行）"
+      "notes": "fixture 位于 ./knowledge_files/eval_fixtures/team_weekly_2026W33.txt（file_reader 白名单目录 knowledge_files/ 下，随仓库提交），未入库向量库，必须用 file_reader 才能读到；评测须从项目根运行"
     },
     {
       "id": "file_002",
@@ -508,7 +508,7 @@
         "file_reader"
       ],
       "difficulty": "easy",
-      "notes": "fixture 位于 ./knowledge_base/incident_20260812.txt，未入库；测试 file_reader 真实读取磁盘文件能力"
+      "notes": "fixture 位于 ./knowledge_files/eval_fixtures/incident_20260812.txt（白名单目录 knowledge_files/ 下），未入库；测试 file_reader 真实读取磁盘文件能力"
     },
     {
       "id": "mix_001",
@@ -666,10 +666,10 @@
         "扣"
       ],
       "must_call_tools": [
-        "knowledge_search",
         "calculator"
       ],
       "difficulty": "medium",
+      "notes": "v1.3 口径修正：80% 病假工资规则已在上一轮 assistant 消息中给出（见 context），本轮只测基于已知规则+新数字的计算，不再要求重新检索",
       "context": [
         {
           "role": "user",
@@ -990,14 +990,18 @@
         "未查询到",
         "未找到",
         "不存在",
-        "不知道"
+        "不知道",
+        "没有实施",
+        "未实施",
+        "暂未",
+        "没有相关"
       ],
       "must_call_tools": [
         "knowledge_search"
       ],
       "is_hallucination_if_answer": true,
       "difficulty": "medium",
-      "notes": "已 grep knowledge_files/ 确认'期权/股权激励'0命中，属 KB 静默须拒答；原'上线'用例因优选商城报告含'APP端上线会员Plus服务'会误判（正确回答被当幻觉），已替换"
+      "notes": "已 grep knowledge_files/ 确认'期权/股权激励'0命中，属 KB 静默须拒答；原'上线'用例因优选商城报告含'APP端上线会员Plus服务'会误判（正确回答被当幻觉），已替换。v1.3 口径修正：内部 KB 覆盖公司制度，检索为空时「明确否定」（没有实施/未实施）视同合法答案——无证据编造具体细节才判幻觉；但「推测性展望」（如'可能集中在…'）仍算编造"
     },
     {
       "id": "hall_004",
@@ -1106,10 +1110,12 @@
         "不客气",
         "欢迎",
         "您好",
-        "很高兴"
+        "很高兴",
+        "感谢"
       ],
       "must_call_tools": [],
-      "difficulty": "easy"
+      "difficulty": "easy",
+      "notes": "v1.3 口径修正：补「感谢」——礼貌应答的表达空间本就该开放，缺该词导致合理回答被判失败"
     },
     {
       "id": "tool_007",
@@ -1240,13 +1246,15 @@
       "query": "用 file_reader 读取 房屋买卖合同纠纷法律分析报告.md，本案约定的违约金具体是多少万元？",
       "expect_keywords": [
         "97万",
-        "97万元"
+        "97万元",
+        "970,000",
+        "970000"
       ],
       "must_call_tools": [
         "file_reader"
       ],
       "difficulty": "easy",
-      "notes": "fixture 由用户置于 ./knowledge_base/房屋买卖合同纠纷法律分析报告.md（.md 格式，未入库向量库），必须用 file_reader 才能读到；验证 .md 格式读取。原文：'违约金为总房款的20%即97万元'。"
+      "notes": "fixture 位于 ./knowledge_files/eval_fixtures/房屋买卖合同纠纷法律分析报告.md（白名单目录 knowledge_files/ 下，未入库向量库），必须用 file_reader 才能读到；验证 .md 格式读取。原文：'违约金为总房款的20%即97万元'。v1.3 口径修正：补数字换算变体「970,000/970000」——模型答 970,000.00 元（=97万）是正确的单位换算而非编造，原标注曾致答案匹配假失败+接地幻觉误报"
     }
   ]
 }

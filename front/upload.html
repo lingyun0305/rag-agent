@@ -392,12 +392,12 @@
                         </div>
                         <div class="upload-title">点击或拖动文件到此处上传</div>
                         <div class="upload-desc">
-                            支持 .txt, .docx, .csv, .xlsx, .pdf, .md, .html, .pptx 类型文件<br>
+                            支持 .txt, .docx, .csv, .xlsx, .md, .html 类型文件<br>
                             单次可上传 5 个 50 MB 的文件
                         </div>
                     </div>
                     <input type="file" id="fileInput" class="file-input" multiple
-                        accept=".txt,.docx,.csv,.xlsx,.pdf,.md,.html,.pptx"
+                        accept=".txt,.docx,.csv,.xlsx,.md,.html"
                         onchange="handleFileSelect(event)">
                 </div>
 
@@ -689,7 +689,7 @@
     }
 
     function handleFiles(files) {
-        const validTypes = ['.txt', '.docx', '.csv', '.xlsx', '.pdf', '.md', '.html', '.pptx'];
+        const validTypes = ['.txt', '.docx', '.csv', '.xlsx', '.md', '.html'];
         const maxSize = 50 * 1024 * 1024; // 50 MB
         const maxFiles = 5;
         let added = 0;
