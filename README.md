@@ -107,7 +107,7 @@ flowchart TD
 
 ```bash
 # 0. 克隆
-git clone <your-repo> RAG-ai_chat && cd RAG-ai_chat
+git clone https://github.com/lingyun0305/rag-agent.git RAG-ai_chat && cd RAG-ai_chat
 
 # 1. 配置环境变量
 cp .env.example .env
