@@ -35,7 +35,7 @@
 
 ## 演示视频
 
-![演示视频](assets/agent项目演示.mp4)
+<video src="assets/demo.mp4" controls width="100%"></video>
 
 > 点击上方播放查看完整演示：Agent 自主编排知识检索 / 计算器 / 文件读取 / OA 流程工具，多轮推理后给出答案（全部在本地 llama.cpp + Qwen2.5-7B 上运行，数据不出网）。
 
@@ -59,32 +59,32 @@
 
 ```mermaid
 flowchart TD
-    User[用户] -->|聊天 / 上传| FE[前端 单文件 HTML/JS · /front]
-    FE -->|HTTP / SSE| API[FastAPI 路由层]
+    User["用户"] -->|"聊天 / 上传"| FE["前端 单文件 HTML/JS · /front"]
+    FE -->|"HTTP / SSE"| API["FastAPI 路由层"]
 
-    API --> SVC[Chat Service]
-    SVC --> Agent[SmartAgent · 纯 Prompt ReAct 编排引擎<br/>（生产默认）]
-    Agent -.AGENT_MODE 切换.-> FC[原生 Function Calling 臂<br/>agent_fc.py]
-    Agent -.AGENT_MODE 切换.-> LG[LangGraph 臂<br/>langgraph_agent.py]
+    API --> SVC["Chat Service"]
+    SVC --> Agent["SmartAgent 纯 Prompt ReAct 编排引擎（生产默认）"]
+    Agent -. "AGENT_MODE 切换" .-> FC["原生 Function Calling 臂 agent_fc.py"]
+    Agent -. "AGENT_MODE 切换" .-> LG["LangGraph 臂 langgraph_agent.py"]
 
-    Agent -->|Action 解析| Tools[工具层 Registry]
-    Tools --> KS[knowledge_search]
-    Tools --> Calc[calculator]
-    Tools --> FR[file_reader]
-    Tools --> OA[oa_reimbursement Mock]
-    Tools --> MCP[MCP 适配器 · 外部工具]
+    Agent -->|"Action 解析"| Tools["工具层 Registry"]
+    Tools --> KS["knowledge_search"]
+    Tools --> Calc["calculator"]
+    Tools --> FR["file_reader"]
+    Tools --> OA["oa_reimbursement Mock"]
+    Tools --> MCP["MCP 适配器 · 外部工具"]
 
-    KS --> Retriever[检索层]
-    Retriever --> Vec[(Chroma 向量)]
-    Retriever --> BM25[BM25 内存索引]
-    Retriever --> Rerank[bge-reranker]
+    KS --> Retriever["检索层"]
+    Retriever --> Vec[("Chroma 向量")]
+    Retriever --> BM25["BM25 内存索引"]
+    Retriever --> Rerank["bge-reranker"]
 
-    Agent --> LLM{LLM}
-    LLM --> LOCAL[本地 llama.cpp :8080]
-    LLM --> CLOUD[云端 qwen / doubao / zhipu]
+    Agent --> LLM{"LLM"}
+    LLM --> LOCAL["本地 llama.cpp :8080"]
+    LLM --> CLOUD["云端 qwen / doubao / zhipu"]
 
-    API --> MySQL[(MySQL 元数据)]
-    API --> Redis[(Redis 缓存 · 可选)]
+    API --> MySQL[("MySQL 元数据")]
+    API --> Redis[("Redis 缓存 · 可选")]
 ```
 
 > 说明：生产流量默认走 **ReAct（SmartAgent）** 编排；原生 Function Calling 与 LangGraph 是并排实现的对照臂，通过 `AGENT_MODE` 在评测中启用，用于验证「编排架构在小模型上不是决定性因素」（详见[评测体系](#评测体系)）。
@@ -145,9 +145,7 @@ docker-compose up -d
 
 端到端评测套件 `backend/eval/run_eval.py` + `backend/eval/testset.json`：**70 条用例 / 9 类**（knowledge_query 20、calculation 10、no_answer 8、mixed 7、tool_call 7、long_dialog 6、fuzzy_query 5、hallucination 4、file_read 3），支持按类型过滤、断点续跑、分轮次追加报告。
 
-### 三臂同条件对照（同机·同 70 例·POST-404 干净数据，2026-10-17）
-
-> **变量对齐**：三臂现已全部处于**无 KB cap** 状态——ReAct 原生无 cap；FC/LG 的检索原文字符截断（`KB_PER_RESULT_CAP=1800`/`KB_BLOCK_CAP=5500`）已于 2026-10-17 移除。故下表为消除"FC/LG 有 cap、ReAct 无 cap"混杂后的单变量对比。
+### 三臂同条件对照（同机·同 70 例·2026-10-17）
 
 | 编排范式 | 综合分 | 答案匹配 | 工具准确率 | 幻觉率 |
 |---|---|---|---|---|
