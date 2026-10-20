@@ -35,9 +35,9 @@
 
 ## 演示视频
 
-<video src="https://raw.githubusercontent.com/lingyun0305/rag-agent/main/assets/demo.mp4" controls width="100%"></video>
+[![演示视频封面](assets/demo_cover.png)](assets/demo.mp4)
 
-> 点击上方播放查看完整演示：Agent 自主编排知识检索 / 计算器 / 文件读取 / OA 流程工具，多轮推理后给出答案（全部在本地 llama.cpp + Qwen2.5-7B 上运行，数据不出网）。
+> 点击上方封面播放完整演示：Agent 自主编排知识检索 / 计算器 / 文件读取 / OA 流程工具，多轮推理后给出答案（全部在本地 llama.cpp + Qwen2.5-7B 上运行，数据不出网）。
 
 ---
 
